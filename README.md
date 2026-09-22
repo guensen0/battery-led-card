@@ -1,43 +1,44 @@
 # battery-led-card
 
-**v4.5.1** — zwei Karten aus einer Datei
+🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-Zwei Lovelace-Karten, eine Datei, eine Ressource:
+**v4.6.0** — two cards from one file, editor in English/German (follows `hass.language`)
 
-| Typ | Für |
+Two Lovelace cards, one file, one resource:
+
+| Type | For |
 |---|---|
-| `custom:battery-led-card` | Batterien — Stand in %, Prozentanzeige, Knopf zum Einsammeln |
-| `custom:led-gauge-card` | beliebige Zahlenwerte — `min`/`max` je Zeile, Rohwert mit Einheit |
+| `custom:battery-led-card` | batteries — level in %, percentage display, "collect" button |
+| `custom:led-gauge-card` | any numeric value — `min`/`max` per row, raw value with unit |
 
-Beide teilen sich Balken, Farben, Schwellen, Ladefluss und Editor; unten steht, wo sie sich
-unterscheiden.
+Both share bars, colors, thresholds, charge flow and the editor; below is where they differ.
 
-Batterie-Entitäten als quer liegendes LED-Segmentpanel (Vorlage: `led.jpg`,
-aber horizontal und mit mehr Balken). Eine Zeile pro Entität, Klick öffnet den More-Info-Dialog.
-Konfiguration komplett über den grafischen Editor.
+Battery entities as a horizontal LED segment panel (inspired by `led.jpg`, but horizontal
+and with more bars). One row per entity, click opens the more-info dialog. Fully configurable
+through the visual editor.
 
-![Vorlage](led.jpg)
+![Template](led.jpg)
 
 ## Installation
 
-**Manuell**
+**Manual**
 
-1. `battery-led-card.js` nach `config/www/` kopieren.
-2. Einstellungen → Dashboards → ⋮ → Ressourcen → **+ Ressource hinzufügen**:
-   URL `/local/battery-led-card.js?v=1`, Typ **JavaScript-Modul**.
-   (Menüpunkt nur sichtbar bei aktiviertem *Erweiterten Modus* im Benutzerprofil.)
-3. Strg+F5. Karte erscheint im Picker als **Battery LED Card** (mit Vorschau).
+1. Copy `battery-led-card.js` to `config/www/`.
+2. Settings → Dashboards → ⋮ → Resources → **+ Add Resource**:
+   URL `/local/battery-led-card.js?v=1`, type **JavaScript Module**.
+   (Menu item only visible with *Advanced Mode* enabled in your user profile.)
+3. Ctrl+F5. The card appears in the picker as **Battery LED Card** (with preview).
 
-Bei Dashboards im YAML-Modus stattdessen in `configuration.yaml` unter
-`lovelace: resources:` eintragen (`url` + `type: module`) und HA neu starten.
+For dashboards in YAML mode, add it under `lovelace: resources:` in `configuration.yaml`
+instead (`url` + `type: module`) and restart HA.
 
-**HACS**: Repository als *Dashboard*-Quelle hinzufügen, `hacs.json` liegt bei.
+**HACS**: add the repository as a *Dashboard* source, `hacs.json` is included.
 
-## Konfiguration
+## Configuration
 
 ```yaml
 type: custom:battery-led-card
-title: Batterien
+title: Batteries
 segments: 12
 columns: 2
 bar_height: 22
@@ -62,182 +63,182 @@ colors:
   low: "#ffa500"
   full: 32cd32
 entities:
-  - sensor.handy_akku
-  - entity: sensor.hausspeicher_soc
-    name: Hausspeicher
-    charge: sensor.speicher_ladeleistung
-    discharge: sensor.speicher_entladeleistung
+  - sensor.phone_battery
+  - entity: sensor.home_battery_soc
+    name: Home battery
+    charge: sensor.storage_charge_power
+    discharge: sensor.storage_discharge_power
     deadband: 20
 ```
 
-| Option | Typ | Default | Bedeutung |
+| Option | Type | Default | Meaning |
 |---|---|---|---|
-| `entities` | list | – | Entity-IDs oder Objekte (s.u.); entfällt bei `auto: true` |
-| `title` | string | – | Kartenüberschrift, weglassen = keine |
-| `segments` | 1–40 | `12` | Anzahl LED-Balken pro Zeile |
-| `columns` | 1–6 | `1` | Spalten im Raster |
-| `bar_height` | 8–80 px | `22` | Höhe der Balken (Breite läuft responsiv mit) |
-| `row_gap` | 0–40 px | `8` | Abstand zwischen Symbol, Name, Balken, Pfeil und Wert |
-| `name_width` | CSS-Länge \| `auto` | `30%` | Breite der Beschriftung. `auto` misst den längsten Namen aus, alles andere wird direkt übernommen (`120px`, `10em`, `40%`) |
-| `precision` | 0–5 | – | Nachkommastellen des angezeigten Werts. Leer = wie die Entität liefert (Batteriekarte: ganze Prozent). Formatiert in der HA-Sprache, also `3,8` statt `3.8` |
-| `state_width` | CSS-Länge \| `auto` | `3.2em` | Breite der Wertespalte rechts. `auto` misst den längsten Wert aus — bei der Gauge Card mit Einheiten meist die bessere Wahl |
-| `show_icon` | bool | `true` | Symbol ganz links anzeigen |
-| `show_name` | bool | `true` | Beschriftung links anzeigen |
-| `show_state` | bool | `true` | Prozentwert rechts anzeigen |
-| `show_flow` | bool | `true` | Ladefluss-Pfeil (▲/▼) anzeigen |
-| `animate_flow` | bool | `true` | Pfeil läuft in Flussrichtung, Tempo nach Stärke |
-| `flow_style` | `arrow` \| `alternate` | `arrow` | `arrow`: eigene Spalte neben dem Balken. `alternate`: die Wertespalte zeigt im Wechsel Wert und Richtung (alle 2,5 s) und spart damit eine Spalte |
-| `peak` | bool | `false` | Peak-Hold-Marke: ein einzelnes Segment bleibt am zuletzt erreichten Höchstwert stehen, während der Balken darunter zurückgeht — die Konvention vom Pegelmeter |
-| `peak_hold` | 1–86400 s | `60` | So lange hält die Marke, danach folgt sie dem aktuellen Wert |
-| `pulse_travel` | 0,2–20 s | `1.5` | Dauer eines Durchlaufs über die ganze Breite — das **Tempo**, gilt für `pulse` und `fill` |
-| `pulse_period` | 1–60 s | `3` | Zeit von einem Durchlauf zum nächsten — der **Abstand**. Ändert das Tempo nicht; was über `pulse_travel` hinausgeht, ist Standzeit. Kleiner als `pulse_travel` lassen die Durchläufe überlappen |
-| `pulse_width` | 1–8 | `2` | Wie viele Segmente gleichzeitig aus sind — die Breite des wandernden Lochs |
-| `blink_tip` | bool | `false` | Lässt die Spitze zusätzlich zur gewählten Animation blinken, sobald eine Richtung erkannt ist. Bei `fill` und `pulse` kombinierbar, bei `blink` schon enthalten |
-| `animation` | `none` \| `blink` \| `blink_always` \| `pulse` \| `fill` | `none` | `blink`: das letzte leuchtende Segment blinkt, sobald ein Lade-/Entladefluss erkannt ist — in beide Richtungen dasselbe, in der Stufenfarbe des Balkens. `blink_always`: blinkt immer, in der Stufenfarbe, ohne Richtungsaussage. `pulse`: ein dunkles Segment wandert über den leuchtenden Teil, beim Laden nach rechts, beim Entladen nach links; Tempo und Wiederholrate über `pulse_travel`, `pulse_period` und `pulse_width`. Nahe am Verhalten vor 4.2.0 liegt
-`pulse_travel: 3`, `pulse_period: 3`, `pulse_width: 3` — durchgehende Welle ohne Pause. `fill`: die Segmente bis zum Stand leuchten gedimmt und werden der Reihe nach voll hell — beim Laden von 0 nach oben, beim Entladen wird dieselbe Bewegung rückwärts abgespielt, oben geht zuerst aus. Der Füllstand bleibt dabei jederzeit ablesbar, weil nichts ganz ausgeht. Gefüllt wird in `pulse_travel`, danach steht der Balken bis `pulse_period` um ist. Blinken und Pfeil folgen dagegen der Leistung (1,8 s bei ~0 bis 0,35 s ab `flow_full_scale`; ohne messbare Leistung 1,1 s) |
-| `flow_full_scale` | number | `1000` | Wert, ab dem die Animation am schnellsten läuft (Einheit der Leistungssensoren) |
-| `cap` | bool | `true` | Pluspol rechts am Balken anzeigen |
-| `frame_width` | 0–6 px | `2` | Stärke des Gehäuserahmens, `0` = kein Rahmen |
-| `cap_size` | 1–20 px | `5` | Breite des Pluspols; die Höhe folgt aus `bar_height` und dieser Breite |
-| `sort` | bool | `false` | Niedrigster Stand zuerst |
-| `preset` | s.u. | `standard` | Fertige Farbrampe (LED-Farben) |
-| `surface` | `classic` \| `glass` \| `flat` | `classic` | Gehäuse, unbeleuchtete Segmente und Rahmen |
-| `color_state` | bool | `true` | Wert rechts in der Richtungsfarbe, sobald ein Fluss erkannt ist |
-| `color_mode` | `level` \| `segment` | `level` | `level`: der ganze Balken trägt die Farbe der aktuellen Stufe. `segment`: jedes Segment hat seine eigene Farbe nach der Schwelle, die es abdeckt — die Rampe läuft dann von links nach rechts durch |
-| `warn_below` | 0–100 | `0` | Unter diesem Stand blinkt der Balken, `0` = aus |
-| `show_last_changed` | bool | `false` | „vor 3 Stunden" neben dem Namen — entlarvt tote Sensoren |
-| `deadband` | number | `1` | Ladefluss-Schwelle (Standard für alle Zeilen), in der Einheit der Leistungssensoren |
-| `auto` | bool | `false` | Alle `device_class: battery`-Entitäten einsammeln |
-| `auto_area` | list | – | … nur aus diesen Bereichen (Entitäts- oder Gerätebereich) |
-| `auto_exclude` | list | – | … diese ausschließen |
-| `rebuild_delay` | 0–300 s | `5` | Puffer, bevor eine geänderte Auto-Liste neu gezeichnet wird |
-| `thresholds` | map | s.u. | Grenzen der Farbstufen in % |
-| `colors` | map | s.u. | Farbe je Stufe (s.u.) |
+| `entities` | list | – | entity IDs or objects (see below); omitted when `auto: true` |
+| `title` | string | – | card heading, leave out = none |
+| `segments` | 1–40 | `12` | number of LED bars per row |
+| `columns` | 1–6 | `1` | columns in the grid |
+| `bar_height` | 8–80 px | `22` | height of the bars (width scales responsively) |
+| `row_gap` | 0–40 px | `8` | gap between icon, name, bar, arrow and value |
+| `name_width` | CSS length \| `auto` | `30%` | label width. `auto` measures the longest name; anything else is used as-is (`120px`, `10em`, `40%`) |
+| `precision` | 0–5 | – | decimal places of the displayed value. Empty = as reported by the entity (battery card: whole percent). Formatted in the HA language, so `3.8` vs `3,8` |
+| `state_width` | CSS length \| `auto` | `3.2em` | width of the value column on the right. `auto` measures the longest value — usually the better choice for the gauge card with units |
+| `show_icon` | bool | `true` | show the icon on the far left |
+| `show_name` | bool | `true` | show the label on the left |
+| `show_state` | bool | `true` | show the percentage on the right |
+| `show_flow` | bool | `true` | show the charge-flow arrow (▲/▼) |
+| `animate_flow` | bool | `true` | arrow moves in the flow direction, speed follows magnitude |
+| `flow_style` | `arrow` \| `alternate` | `arrow` | `arrow`: own column next to the bar. `alternate`: the value column alternates between value and direction (every 2.5 s), saving a column |
+| `peak` | bool | `false` | peak-hold mark: a single segment stays at the last-reached high while the bar below it recedes — the level-meter convention |
+| `peak_hold` | 1–86400 s | `60` | how long the mark holds before it follows the current value again |
+| `pulse_travel` | 0.2–20 s | `1.5` | duration of one pass across the full width — the **speed**, applies to `pulse` and `fill` |
+| `pulse_period` | 1–60 s | `3` | time from one pass to the next — the **gap**. Doesn't change the speed; anything beyond `pulse_travel` is idle time. Smaller than `pulse_travel` lets passes overlap |
+| `pulse_width` | 1–8 | `2` | how many segments are dark at once — the width of the travelling gap |
+| `blink_tip` | bool | `false` | makes the tip blink in addition to the chosen animation, as soon as a direction is detected. Combinable with `fill` and `pulse`; already included in `blink` |
+| `animation` | `none` \| `blink` \| `blink_always` \| `pulse` \| `fill` | `none` | `blink`: the last lit segment blinks as soon as a charge/discharge flow is detected — same in both directions, in the bar's level color. `blink_always`: always blinks, in the level color, without indicating direction. `pulse`: a dark segment travels across the lit part, right while charging, left while discharging; speed and repeat rate via `pulse_travel`, `pulse_period` and `pulse_width`. Close to the pre-4.2.0 behavior:
+`pulse_travel: 3`, `pulse_period: 3`, `pulse_width: 3` — a continuous wave with no pause. `fill`: the segments up to the level light up dimmed and turn fully bright one by one — upward from 0 while charging, the same motion reversed while discharging, with the top going dark first. The level stays readable at all times because nothing ever goes fully dark. Filling happens over `pulse_travel`, then the bar holds until `pulse_period` is up. Blinking and the arrow, on the other hand, follow the actual power (1.8 s near 0 down to 0.35 s at `flow_full_scale`; 1.1 s without a measurable power value) |
+| `flow_full_scale` | number | `1000` | value at which the animation runs at its fastest (unit of the power sensors) |
+| `cap` | bool | `true` | show the positive terminal on the right of the bar |
+| `frame_width` | 0–6 px | `2` | thickness of the housing frame, `0` = no frame |
+| `cap_size` | 1–20 px | `5` | width of the terminal; its height follows from `bar_height` and this width |
+| `sort` | bool | `false` | lowest level first |
+| `preset` | see below | `standard` | ready-made color ramp (LED colors) |
+| `surface` | `classic` \| `glass` \| `flat` | `classic` | housing, unlit segments and frame |
+| `color_state` | bool | `true` | value on the right in the direction color, as soon as a flow is detected |
+| `color_mode` | `level` \| `segment` | `level` | `level`: the whole bar carries the color of the current level. `segment`: each segment has its own color by the threshold it covers — the ramp then runs left to right |
+| `warn_below` | 0–100 | `0` | the bar blinks below this level, `0` = off |
+| `show_last_changed` | bool | `false` | "3 hours ago" next to the name — exposes dead sensors |
+| `deadband` | number | `1` | charge-flow threshold (default for all rows), in the unit of the power sensors |
+| `auto` | bool | `false` | collect all `device_class: battery` entities |
+| `auto_area` | list | – | … only from these areas (entity or device area) |
+| `auto_exclude` | list | – | … excluding these |
+| `rebuild_delay` | 0–300 s | `5` | buffer before a changed auto-list is redrawn |
+| `thresholds` | map | see below | boundaries of the color levels, in % |
+| `colors` | map | see below | color per level (see below) |
 
-### Entitäten einsammeln
+### Collecting entities
 
-Beim Hinzufügen der Karte sind die ersten vier gefundenen Batterien vorausgewählt.
+When the card is added, the first four batteries found are pre-selected.
 
-Unter **Gewählte Entitäten** hat jede Zeile ihren eigenen aufklappbaren Block: Entitätswahl,
-Anzeigename, Ladefluss-Sensoren und Ladefluss-Schwelle — alles an einer Stelle. Ganz unten
-steht ein leerer Block **＋ Entität hinzufügen**; sobald dort eine Entität gewählt ist, rückt
-sie in die Liste und ein neuer leerer Block erscheint. Eine Zeile entfernt man, indem man ihr
-Entitätsfeld leert.
+Under **Selected entities**, each row has its own expandable block: entity, display name,
+charge-flow sensors and charge-flow threshold — all in one place. At the bottom is an empty
+**＋ Add entity** block; as soon as an entity is chosen there, it moves into the list and a new
+empty block appears. Remove a row by clearing its entity field.
 
-Der Knopf **Batterien einsammeln** hängt alle noch nicht gelisteten
-`device_class: battery`-Entitäten auf einen Schlag an.
+The **Collect batteries** button appends every `device_class: battery` entity not already
+listed, in one go.
 
-Wer die Liste stattdessen *laufend* automatisch pflegen lassen will, setzt `auto: true` von
-Hand im YAML — dann gelten `auto_area`, `auto_exclude` und `rebuild_delay`. Manuell gelistete
-Entitäten stehen dabei immer vorn, der Rest wird dublettenfrei angehängt.
+To keep the list maintained *continuously* and automatically instead, set `auto: true` by hand
+in YAML — then `auto_area`, `auto_exclude` and `rebuild_delay` apply. Manually listed entities
+always come first, the rest is appended without duplicates.
 
-Ändert sich die Auto-Liste (Gerät taucht auf oder fällt weg), zeichnet die Karte die Zeilen
-nicht sofort neu, sondern erst nach `rebuild_delay` Sekunden — ein flatternder Sensor lässt die
-Karte damit nicht zucken. Bis dahin läuft die alte Zeilenliste weiter; eine verschwundene
-Entität steht solange grau auf `n/a`. Der Timer wird bewusst *nicht* nachgetriggert, sonst
-würde Dauerflattern den Umbau endlos verschieben. `0` = sofort.
+When the auto-list changes (a device appears or disappears), the card doesn't redraw the rows
+immediately but only after `rebuild_delay` seconds — a flapping sensor won't make the card
+jitter. Until then the old row list keeps running; a vanished entity shows grey as `n/a` in the
+meantime. The timer is deliberately *not* retriggered on every change, otherwise constant
+flapping would postpone the rebuild forever. `0` = immediately.
 
-### Eintrag je Entität
+### Per-entity entry
 
-| Schlüssel | Bedeutung |
+| Key | Meaning |
 |---|---|
-| `entity` | Pflicht |
-| `name` | Anzeigename statt `friendly_name` / Entity-ID |
-| `icon` | Symbol statt dem der Entität, z. B. `mdi:home-battery` |
-| `precision` | Nachkommastellen nur für diese Zeile |
-| `charging` | `binary_sensor`, `on` = lädt |
-| `power` | ein vorzeichenbehafteter Sensor: `+` lädt, `−` entlädt |
-| `charge` + `discharge` | zwei getrennte Leistungssensoren, der größere gewinnt |
-| `deadband` | Ladefluss-Schwelle nur für diese Zeile, sonst gilt der Kartenwert |
+| `entity` | required |
+| `name` | display name instead of `friendly_name` / entity ID |
+| `icon` | icon instead of the entity's own, e.g. `mdi:home-battery` |
+| `precision` | decimal places for this row only |
+| `charging` | `binary_sensor`, `on` = charging |
+| `power` | a signed sensor: `+` charging, `−` discharging |
+| `charge` + `discharge` | two separate power sensors, the larger one wins |
+| `deadband` | charge-flow threshold for this row only, otherwise the card value applies |
 
-Gedacht ist das für Hausspeicher (LG, Marstek, Solix …), die neben dem Ladezustand
-Leistungssensoren mitbringen. Für Geräteakkus lässt man die Felder einfach leer, dann bleibt
-die Pfeilspalte leer — oder man schaltet sie per `show_flow: false` ganz ab.
+This is meant for home batteries (LG, Marstek, Solix …) that come with power sensors besides
+the state of charge. For device batteries, just leave the fields empty and the arrow column
+stays empty — or turn it off entirely with `show_flow: false`.
 
-Ergebnis ist ein Chevron neben dem Balken: **▲ grün** = wird geladen, **▼ orange** = wird
-entladen, nichts = Ruhe oder unbekannt. Mit `animate_flow` läuft der Pfeil in Flussrichtung;
-das Tempo steigt mit der Leistung — von 2 s pro Durchlauf bei ~0 auf 0,5 s ab
-`flow_full_scale`. Ein reiner Lade-Binärsensor liefert keine Stärke, der Pfeil läuft dann mit
-mittlerem Tempo. `prefers-reduced-motion` schaltet alle Animationen ab. Die drei Quellen werden in obiger Reihenfolge geprüft,
-`charging: off` heißt ausdrücklich *nicht* „entlädt" — ein Lade-Binärsensor weiß das nicht.
-Werte unterhalb der Ladefluss-Schwelle gelten als Ruhe.
+The result is a chevron next to the bar: **▲ green** = charging, **▼ orange** = discharging,
+nothing = idle or unknown. With `animate_flow` the arrow moves in the flow direction; the
+speed increases with power — from 2 s per pass near 0 down to 0.5 s at `flow_full_scale`. A
+plain charging binary sensor doesn't report a magnitude, so the arrow runs at medium speed.
+`prefers-reduced-motion` turns off all animations. The three sources are checked in the order
+above; `charging: off` explicitly does *not* mean "discharging" — a charging binary sensor
+doesn't know that. Values below the charge-flow threshold count as idle.
 
-### Farbvoreinstellungen (`preset`)
+### Color presets (`preset`)
 
-| Wert | Rampe |
+| Value | Ramp |
 |---|---|
 | `standard` | tomato → orange → gold → yellowgreen → limegreen |
-| `led-classic` | rot → orange → gelb → grün → cyan, wie `led.jpg` |
-| `ampel` | gedeckte Ampelfarben, `#d32f2f` → `#388e3c` |
-| `neon` | knallig, für dunkle Themes |
-| `mono` | alle Stufen in `var(--primary-color)` — Länge zählt, nicht Farbe |
-| `invers` | blau → grün → gelb → orange → rot, also **voll = rot**: für Werte, bei denen hoch schlecht ist (Temperatur, Füllstand eines Abwassertanks) |
+| `led-classic` | red → orange → yellow → green → cyan, like `led.jpg` |
+| `ampel` | muted traffic-light colors, `#d32f2f` → `#388e3c` |
+| `neon` | vivid, for dark themes |
+| `mono` | every level in `var(--primary-color)` — length matters, not color |
+| `invers` | blue → green → yellow → orange → red, i.e. **full = red**: for values where high is bad (temperature, a wastewater tank's fill level) |
 
 ```yaml
 preset: ampel
 colors:
-  critical: "#000"      # einzelne Stufe trotzdem selbst setzen
+  critical: "#000"      # override a single level anyway
 ```
 
-Die Platzhalter im Farbeditor zeigen immer die Werte der gewählten Voreinstellung.
+The placeholders in the color editor always show the values of the selected preset.
 
-### Gehäuse (`surface`)
+### Housing (`surface`)
 
-| Wert | Körper | Unbeleuchtet | Rahmen |
+| Value | Body | Unlit | Frame |
 |---|---|---|---|
 | `classic` | `#111111` | `#262626` | `var(--divider-color)` |
-| `glass` | Textfarbe 7 % auf transparent | 18 % | 25 % |
-| `flat` | `transparent` | Textfarbe 15 % | keiner |
+| `glass` | text color at 7% over transparent | 18% | 25% |
+| `flat` | `transparent` | text color at 15% | none |
 
-`classic` ist der schwarze Batteriekörper aus `led.jpg` und die Voreinstellung — passt zu den
-Standard-Themes, hell wie dunkel. **`glass`** ist für Themes mit durchscheinenden oder
-verlaufenden Karten (z. B. *kibbit-dark-cards*): nichts wird übermalt, die Karte scheint
-durch, im hellen Theme kippt derselbe Schleier ins Dunkle. `flat` lässt das Gehäuse ganz weg.
+`classic` is the black battery body from `led.jpg` and the default — matches the standard
+themes, light and dark alike. **`glass`** is for themes with translucent or gradient cards
+(e.g. *kibbit-dark-cards*): nothing is painted over, the card shows through, and in a light
+theme the same veil turns dark instead of light. `flat` drops the housing entirely.
 
-Einzelne Werte übersteuerst du wie gehabt über `colors.body`, `colors.off`, `colors.frame` —
-die schlagen sowohl `surface` als auch `preset`.
+Override individual values as usual via `colors.body`, `colors.off`, `colors.frame` — these
+beat both `surface` and `preset`.
 
-### Farbstufen
+### Color levels
 
-| Schlüssel | Default-Schwelle | Default-Farbe |
+| Key | Default threshold | Default color |
 |---|---|---|
-| `critical` | < 10 % | `#ff6347` tomato |
-| `low` | < 30 % | `#ffa500` orange |
-| `medium` | < 50 % | `#ffd700` gold |
-| `high` | < 80 % | `#9acd32` yellowgreen |
-| `full` | Rest | `#32cd32` limegreen |
-| `off` | – | unbeleuchtete Segmente — per Default aus dem Theme gemischt |
-| `body` | – | Gehäuse hinter den Segmenten — per Default aus dem Theme gemischt |
-| `frame` | – | Rahmen und Pluspol, Default `var(--divider-color)` |
-| `pos` | – | Richtung positiv (lädt / steigt), Default `var(--success-color)` — färbt Pfeil und Wert, nicht die Segmente |
-| `neg` | – | Richtung negativ (entlädt / fällt), Default `var(--error-color)`, also rot |
+| `critical` | < 10% | `#ff6347` tomato |
+| `low` | < 30% | `#ffa500` orange |
+| `medium` | < 50% | `#ffd700` gold |
+| `high` | < 80% | `#9acd32` yellowgreen |
+| `full` | rest | `#32cd32` limegreen |
+| `off` | – | unlit segments — mixed from the theme by default |
+| `body` | – | housing behind the segments — mixed from the theme by default |
+| `frame` | – | frame and terminal, default `var(--divider-color)` |
+| `pos` | – | positive direction (charging / rising), default `var(--success-color)` — colors the arrow and value, not the segments |
+| `neg` | – | negative direction (discharging / falling), default `var(--error-color)`, i.e. red |
 
-Im Editor gibt es zwei Wege: **Farben (Theme)** mit dem HA-eigenen Farbwähler (Theme-Farben
-wie *red*, *primary*, *accent*) und darunter **Farben — eigene Werte** mit Farbwähler plus
-Textfeld für alles andere. Beide schreiben denselben Schlüssel, leer = Default.
-Farbwerte dürfen sein: `#2ed0d8`, `2ed0d8` (Raute wird ergänzt), `#2ed0d8ff` mit Alpha,
-`rgba(46,208,216,0.4)`, `rgb(46 208 216 / 40%)`, `hsla(…)`, `#2ed0d866` und `2ed0d866`
-(8-stellig = mit Alpha), `[46,208,216]` und `[46,208,216,0.4]` als Liste,
-Namen wie `red` oder `tomato` (wird zu `var(--red-color, red)`: Theme-Farbe wenn das Theme sie
-kennt, sonst der gleichnamige CSS-Wert), Theme-Namen mit Bindestrich wie `deep-purple`,
-`rgb(46,208,216)`, `var(--error-color)` — oder weiterhin `[46,208,216]` aus älteren Configs. `thresholds` und `colors` sind unabhängig voneinander.
+The editor offers two ways: **Colors (theme)** with HA's own color picker (theme colors like
+*red*, *primary*, *accent*) and below it **Colors — custom values** with a color picker plus a
+text field for everything else. Both write the same key, empty = default. Color values may be:
+`#2ed0d8`, `2ed0d8` (the `#` is added), `#2ed0d8ff` with alpha, `rgba(46,208,216,0.4)`,
+`rgb(46 208 216 / 40%)`, `hsla(…)`, `#2ed0d866` and `2ed0d866` (8-digit = with alpha),
+`[46,208,216]` and `[46,208,216,0.4]` as a list, names like `red` or `tomato` (becomes
+`var(--red-color, red)`: theme color if the theme has one, otherwise the CSS value of the
+same name), hyphenated theme names like `deep-purple`, `rgb(46,208,216)`,
+`var(--error-color)` — or still `[46,208,216]` from older configs. `thresholds` and `colors`
+are independent of each other.
 
 ### Theme
 
-Die Karte nimmt die Theme-Variablen, wo es welche gibt: Kartenhintergrund und -rand von
-`ha-card`, `--ha-card-header-font-size`/`-font-family`/`-color` für den Titel,
-`--primary-text-color` für Namen, `--secondary-text-color` für Wert und Zeit,
-`--divider-color` für Gehäuserahmen und Pluspol, `--state-icon-color` fürs Symbol,
-`--error-color` für die Warnung, `--success-color`/`--warning-color` für den Pfeil,
-`--disabled-text-color` für Zeilen ohne Wert.
+The card picks up theme variables wherever they exist: card background and border from
+`ha-card`, `--ha-card-header-font-size`/`-font-family`/`-color` for the title,
+`--primary-text-color` for names, `--secondary-text-color` for value and time,
+`--divider-color` for the housing frame and terminal, `--state-icon-color` for the icon,
+`--error-color` for the warning, `--success-color`/`--warning-color` for the arrow,
+`--disabled-text-color` for rows without a value.
 
-Gehäuse, unbeleuchtete Segmente und Rahmen sind Schleier aus der Textfarbe gegen
-`transparent` (`color-mix` mit 7 %, 18 % und 25 %) — also **kein eigener Hintergrund**. Damit
-scheint die Karte durch, auch bei Themes mit durchscheinenden oder verlaufenden Karten; im
-hellen Theme wird derselbe Schleier dunkel statt hell. Die LED-Farben selbst bleiben fest,
-sonst wäre die Rampe in jedem Theme anders.
+Housing, unlit segments and frame are veils of the text color over `transparent`
+(`color-mix` at 7%, 18% and 25%) — so **no background of their own**. This lets the card show
+through even with themes that have translucent or gradient cards; in a light theme the same
+veil turns dark instead of light. The LED colors themselves stay fixed, otherwise the ramp
+would look different in every theme.
 
-Den klassischen schwarzen Batteriekörper aus `led.jpg` bekommst du unabhängig vom Theme mit:
+To get the classic black battery body from `led.jpg` regardless of theme:
 
 ```yaml
 colors:
@@ -246,7 +247,7 @@ colors:
   frame: "#9e9e9e"
 ```
 
-Und ganz ohne Gehäuse, nur Segmente auf der Karte:
+And with no housing at all, just segments on the card:
 
 ```yaml
 frame_width: 0
@@ -254,100 +255,108 @@ colors:
   body: transparent
 ```
 
-### Wertermittlung
+### Determining the value
 
-numerischer State → Attribut `battery_level` → `binary_sensor` (`on` = leer, `off` = voll)
-→ sonst `n/a` (graue Zeile, keine Segmente).
+numeric state → `battery_level` attribute → `binary_sensor` (`on` = empty, `off` = full)
+→ otherwise `n/a` (grey row, no segments).
 
 ## Version
 
-`VERSION` steht oben in `battery-led-card.js`. Sie erscheint unten im GUI-Editor, in der
-Beschreibung im Karten-Picker und als Banner in der Browser-Konsole — praktisch um zu prüfen,
-ob der Browser die neue Datei geladen hat (Cache!).
+`VERSION` is at the top of `battery-led-card.js`. It shows up at the bottom of the visual
+editor, in the description in the card picker, and as a banner in the browser console —
+handy for checking whether the browser has loaded the new file (cache!).
 
-## `custom:led-gauge-card` — beliebige Werte
+## `custom:led-gauge-card` — any values
 
-Gleiche Optionen wie oben, plus:
+Same options as above, plus:
 
-| Option | Typ | Default | Bedeutung |
+| Option | Type | Default | Meaning |
 |---|---|---|---|
-| `min` | number | `0` | Wert, der 0 % entspricht (Karte) |
-| `max` | number | `100` | Wert, der 100 % entspricht (Karte) |
-| `trend_flow` | bool | `true` | Pfeil aus dem eigenen Verlauf, wenn keine Ladefluss-Sensoren angegeben sind. Nur hier an — die Batteriekarte lässt ihn aus, ein um 1 % fallender Akku braucht keinen Pfeil |
-| `trend_deadband` | 0–100 % | `0.5` | Änderungen kleiner als dieser Wert (in % der Skala) gelten als Ruhe — das Gegenstück zu `deadband` auf der Batteriekarte. Auch je Zeile setzbar |
-| `trend_hold` | 10–86400 s | `300` | So lange bleibt der Pfeil nach der letzten Änderung stehen, und so weit blickt die History-Abfrage zurück |
-| `trend_history` | bool | `true` | Beim Laden einmal HA nach dem Verlauf fragen, damit der Pfeil sofort stimmt |
-| `trend_full_scale` | number | `5` | Änderung in %/min, ab der die Animation am schnellsten läuft |
+| `min` | number | `0` | value that corresponds to 0% (card-wide) |
+| `max` | number | `100` | value that corresponds to 100% (card-wide) |
+| `trend_flow` | bool | `true` | arrow derived from the value's own trend, when no charge-flow sensors are given. Only on here — the battery card leaves it off, a battery dropping by 1% doesn't need an arrow |
+| `trend_deadband` | 0–100% | `0.5` | changes smaller than this (in % of scale) count as idle — the counterpart to `deadband` on the battery card. Also settable per row |
+| `trend_hold` | 10–86400 s | `300` | how long the arrow stays after the last change, and how far back the history query looks |
+| `trend_history` | bool | `true` | ask HA for the history once on load, so the arrow is correct right away |
+| `trend_full_scale` | number | `5` | change in %/min at which the animation runs at its fastest |
 
-`min`/`max` gibt es auch je Zeile und schlagen dann den Kartenwert. Ohne Angabe gilt 0–100,
-die Karte verhält sich dann wie die Batterievariante.
+`min`/`max` are also available per row and then override the card-wide value. Without either,
+0–100 applies and the card behaves like the battery variant.
 
 ```yaml
 type: custom:led-gauge-card
-title: Speicher & Tanks
+title: Storage & tanks
 segments: 20
 color_mode: segment
 entities:
-  - entity: sensor.zisterne_fuellstand
-    name: Zisterne
+  - entity: sensor.cistern_level
+    name: Cistern
     min: 0
     max: 5000
-  - entity: sensor.heizoel_liter
-    name: Heizöl
+  - entity: sensor.heating_oil_liters
+    name: Heating oil
     max: 3000
-  - sensor.luftfeuchte_bad          # ohne min/max: 0–100
+  - sensor.bathroom_humidity          # without min/max: 0–100
 ```
 
-Angezeigt wird rechts der **Rohwert mit Einheit** (`3240 l`), nicht der Prozentsatz — der
-steckt in der Balkenlänge.
+Shown on the right is the **raw value with its unit** (`3240 l`), not the percentage — that's
+encoded in the bar length instead.
 
-Die Ladefluss-Sensoren (`charging`, `power`, `charge`/`discharge`, `deadband`) gibt es hier
-nicht — bei einem Füllstand hat „lädt" keine Bedeutung. Stattdessen der **Trend-Pfeil**: die
-Karte beobachtet den Wert selbst, steigt er zeigt der Pfeil hoch, fällt er runter, Tempo nach
-Änderung pro Minute. Beim Aufbau holt sich die Karte einmal den Verlauf der letzten `trend_hold` Sekunden
-(`history/history_during_period`, ein Aufruf für alle Zeilen zusammen) — der Pfeil steht damit
-sofort richtig, statt erst nach der ersten beobachteten Änderung. Danach läuft es ohne weitere
-Abfragen aus den laufenden State-Updates. Ist die History-Integration aus oder scheitert der
-Aufruf, bleibt es beim alten Verhalten: Pfeil ab der ersten Änderung. Abschaltbar mit
-`trend_history: false`.
+The charge-flow sensors (`charging`, `power`, `charge`/`discharge`, `deadband`) don't exist
+here — "charging" has no meaning for a fill level. Instead there's the **trend arrow**: the
+card watches the value itself, points up when it rises, down when it falls, speed follows the
+rate of change per minute. On load, the card fetches the last `trend_hold` seconds of history
+once (`history/history_during_period`, one call for all rows together) — so the arrow is
+correct right away instead of only after the first observed change. After that it runs off the
+ongoing state updates with no further queries. If the history integration is off or the call
+fails, it falls back to the old behavior: arrow only from the first change onward. Disable
+with `trend_history: false`.
 
-(In YAML funktionieren die Sensorfelder weiterhin, sie stehen nur nicht im Editor.)
+(The sensor fields still work in YAML, they're just not in the editor.)
 
-## Testsensoren
+## Test sensors
 
-`testsensoren.yaml` enthält vier Template-Sensoren zum Ausprobieren der Animationen, ohne auf
-eine echte Batterie zu warten: **fallend** und **steigend** (je 5 Minuten von 0 auf 100 bzw.
-zurück), **pendelnd** (Dreieck ohne Sprung, 10 Minuten pro Runde) und **Testleistung**
-(+2000 / −2000 W, passend zum Pendel). Einfügen, YAML-Konfiguration neu laden, fertig — kein
-Neustart.
+`testsensoren.yaml` contains four template sensors for trying out the animations without
+waiting for a real battery: **falling** and **rising** (5 minutes from 0 to 100 and back),
+**oscillating** (a triangle wave with no jump, 10 minutes per cycle) and **test power**
+(+2000 / −2000 W, matching the oscillator). Add it, reload YAML configuration, done — no
+restart needed.
 
 ```yaml
 type: custom:led-gauge-card
-title: Animationstest
+title: Animation test
 segments: 24
 animation: pulse
 peak: true
 entities:
   - entity: sensor.testwert_pendelnd
-    name: Pendel
+    name: Oscillating
   - entity: sensor.testwert_steigend
-    name: Steigend
+    name: Rising
   - entity: sensor.testwert_fallend
-    name: Fallend
+    name: Falling
 trend_full_scale: 20
 trend_hold: 60
 ```
 
-Für die Batteriekarte stattdessen `sensor.testwert_pendelnd` mit
-`power: sensor.testleistung` — dann kommt die Richtung aus der Leistung statt aus dem Trend.
+For the battery card, use `sensor.testwert_pendelnd` with `power: sensor.testleistung`
+instead — then the direction comes from the power value rather than the trend.
+
+## Editor language
+
+The visual editor's labels, dropdown options, buttons and hints follow `hass.language` —
+English and German are supported today, with English as the fallback for any other language.
+The card's own on-screen text (e.g. the `n/a`/`n/v` shown for an unavailable entity) follows
+the same setting. The card picker's description text is fixed at load time (from the browser
+language), since it's set before any dashboard's `hass` is available.
 
 ## Test
 
-`node test.mjs` — läuft beides: die Logiktests und anschließend `test-render.mjs`, das die
-Karte in einem Mini-DOM tatsächlich rendert (beide Kartentypen, jede Betriebsart, Randfälle
-wie leere Liste oder kaputter Sensor). Der Rendertest prüft nicht das Aussehen, sondern dass
-der Renderpfad ohne Ausnahme durchläuft.
+`node test.mjs` — runs both: the logic tests, then `test-render.mjs`, which actually renders
+the card in a minimal DOM (both card types, every mode, edge cases like an empty list or a
+dead sensor). The render test doesn't check appearance, only that the render path completes
+without throwing.
 
-Geprüft werden: Farbstufen und Schwellen, Farbnormalisierung, Segmentberechnung,
-Wertermittlung, Ladefluss-Logik, Auto-Sammlung inkl. Bereichsfilter, relative Zeit,
-Editor→Config-Umwandlung.
+Covered: color levels and thresholds, color normalization, segment math, value resolution,
+charge-flow logic, auto-collection incl. area filtering, relative time, editor→config
+conversion, and the editor's language selection.

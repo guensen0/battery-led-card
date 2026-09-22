@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.5.1";
+export const VERSION = "4.6.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -439,8 +439,10 @@ export class BatteryLedCard extends Base {
   }
 
   setConfig(config) {
+    // Entwicklerfehler (falsche YAML/JS-Config) - bleibt Englisch wie in der Konsole üblich,
+    // nicht an hass.language gekoppelt.
     if (config.entities && !Array.isArray(config.entities))
-      throw new Error("battery-led-card: 'entities' muss eine Liste sein");
+      throw new Error("battery-led-card: 'entities' must be a list");
     this._config = {
       ...DEFAULTS,
       // Verlaufspfeil ergibt nur bei frei skalierten Werten Sinn: eine Batterie, die um 1 %
@@ -770,7 +772,7 @@ export class BatteryLedCard extends Base {
 
   /** Prozent bei Batterien, sonst der Rohwert mit seiner Einheit. */
   _stateText(st, lvl, item, c, locale) {
-    if (lvl === null) return "n/a";
+    if (lvl === null) return LABELS[pickLang(this._hass?.language)].na;
     const digits = item.precision ?? c.precision;
     if (!this._generic) return `${formatValue(lvl, digits ?? 0, locale)}%`;
     const unit = st.attributes.unit_of_measurement;
@@ -845,93 +847,245 @@ export class BatteryLedCard extends Base {
   }
 
   static getStubConfig(hass) {
-    return { title: "Batterien", entities: autoEntities(hass).slice(0, 4) };
+    return { title: LABELS[pickLang(hass?.language)].stub_title_battery, entities: autoEntities(hass).slice(0, 4) };
   }
 }
 
 // ---------------------------------------------------------------- GUI-Editor
+// ------------------------------------------------------------- Übersetzungen
+
+// Unterstützte Sprachen, plus alle Editor-/Karten-Texte, die nicht schon über
+// Intl (Zahlen, "vor 3 Stunden") oder HA selbst (ha-form-Feldtypen) laufen.
+// `en` ist der Fallback für jede nicht gelistete Sprache.
+export const LANGS = ["en", "de"];
+
+/** hass.language ("de", "en-US", …) auf eine unterstützte Sprache abbilden. */
+export const pickLang = (language) => {
+  const l = String(language || "en").slice(0, 2).toLowerCase();
+  return LANGS.includes(l) ? l : "en";
+};
 
 const LABELS = {
-  title: "Titel",
-  entities: "Entitäten",
-  segments: "Segmente pro Balken",
-  columns: "Spalten",
-  bar_height: "Höhe der Balken (px)",
-  row_gap: "Abstand zwischen den Spalten (px)",
-  name_width: "Breite der Beschriftung (auto, 30%, 120px …)",
-  state_width: "Breite des Werts (auto, 3.2em, 60px …)",
-  precision: "Nachkommastellen (leer = wie die Entität)",
-  show_icon: "Symbol anzeigen",
-  show_name: "Name anzeigen",
-  show_state: "Prozentwert anzeigen",
-  show_flow: "Ladefluss-Pfeil anzeigen",
-  animate_flow: "Pfeil animieren",
-  flow_style: "Wo die Richtung steht",
-  animation: "Animation",
-  pulse_travel: "Puls: Dauer eines Durchlaufs (s)",
-  pulse_period: "Puls: Abstand zwischen Durchläufen (s)",
-  pulse_width: "Puls: Breite (Segmente gleichzeitig aus)",
-  blink_tip: "Spitze zusätzlich blinken lassen",
-  peak: "Peak-Hold-Marke",
-  peak_hold: "Peak halten (s)",
-  color_state: "Wert in Richtungsfarbe",
-  flow_full_scale: "Voller Ladefluss bei … (Tempo-Maßstab)",
-  color_mode: "Färbung",
-  preset: "Farbvoreinstellung (Rampe)",
-  surface: "Gehäuse-Voreinstellung",
-  min: "Minimum (= 0 %)",
-  max: "Maximum (= 100 %)",
-  trend_flow: "Pfeil aus dem eigenen Verlauf",
-  trend_hold: "Pfeil halten (s)",
-  trend_deadband: "Trend-Schwelle (% Änderung, darunter = Ruhe)",
-  trend_history: "Verlauf beim Laden abfragen",
-  trend_full_scale: "Volles Tempo bei … %/min",
-  cap: "Pluspol anzeigen",
-  cap_size: "Pluspol-Größe (px)",
-  frame_width: "Rahmenstärke (px, 0 = kein Rahmen)",
-  sort: "Niedrigster Stand zuerst",
-  warn_below: "Warnung blinkt unter … % (0 = aus)",
-  show_last_changed: "Letzte Änderung anzeigen",
-  deadband: "Ladefluss-Schwelle (leer = Karten-Standard)",
-  auto: "Batterien automatisch einsammeln",
-  auto_area: "… nur aus diesen Bereichen",
-  auto_exclude: "… diese ausschließen",
-  rebuild_delay: "Umbau-Verzögerung (s)",
-  items: "Gewählte Entitäten",
-  entity: "Entität (leeren = entfernen)",
-  add: "＋ Entität hinzufügen",
-  thresholds: "Schwellen (%)",
-  colors: "Farben (Theme)",
-  colors_custom: "Farben — eigene Werte (Hex, rgb(), var(…))",
-  critical: "Kritisch",
-  low: "Niedrig",
-  medium: "Mittel",
-  high: "Hoch",
-  full: "Voll",
-  off: "Aus (dunkle Segmente)",
-  body: "Gehäuse (Hintergrund der Balken)",
-  frame: "Rahmen & Pluspol",
-  pos: "Richtung positiv (lädt / steigt)",
-  neg: "Richtung negativ (entlädt / fällt)",
-  name: "Anzeigename",
-  icon: "Symbol (leer = Symbol der Entität)",
-  charging: "Lade-Sensor (binary_sensor)",
-  power: "Leistung vorzeichenbehaftet (+laden / −entladen)",
-  charge: "Ladeleistung",
-  discharge: "Entladeleistung",
+  en: {
+    title: "Title",
+    entities: "Entities",
+    segments: "Segments per bar",
+    columns: "Columns",
+    bar_height: "Bar height (px)",
+    row_gap: "Gap between columns (px)",
+    name_width: "Label width (auto, 30%, 120px …)",
+    state_width: "Value width (auto, 3.2em, 60px …)",
+    precision: "Decimal places (empty = as reported by the entity)",
+    show_icon: "Show icon",
+    show_name: "Show name",
+    show_state: "Show percentage",
+    show_flow: "Show charge-flow arrow",
+    animate_flow: "Animate arrow",
+    flow_style: "Where the direction is shown",
+    animation: "Animation",
+    pulse_travel: "Pulse: duration of one pass (s)",
+    pulse_period: "Pulse: gap between passes (s)",
+    pulse_width: "Pulse: width (segments dark at once)",
+    blink_tip: "Also blink the tip",
+    peak: "Peak-hold mark",
+    peak_hold: "Hold peak (s)",
+    color_state: "Value in direction color",
+    flow_full_scale: "Full charge flow at … (speed scale)",
+    color_mode: "Coloring",
+    preset: "Color preset (ramp)",
+    surface: "Housing preset",
+    min: "Minimum (= 0%)",
+    max: "Maximum (= 100%)",
+    trend_flow: "Arrow from the value's own trend",
+    trend_hold: "Hold arrow (s)",
+    trend_deadband: "Trend threshold (% change, below = idle)",
+    trend_history: "Query history on load",
+    trend_full_scale: "Full speed at … %/min",
+    cap: "Show positive terminal",
+    cap_size: "Terminal size (px)",
+    frame_width: "Frame width (px, 0 = no frame)",
+    sort: "Lowest level first",
+    warn_below: "Warning blinks below … % (0 = off)",
+    show_last_changed: "Show last changed",
+    deadband: "Charge-flow threshold (empty = card default)",
+    auto: "Collect batteries automatically",
+    auto_area: "… only from these areas",
+    auto_exclude: "… excluding these",
+    rebuild_delay: "Rebuild delay (s)",
+    items: "Selected entities",
+    entity: "Entity (clear to remove)",
+    add: "＋ Add entity",
+    thresholds: "Thresholds (%)",
+    colors: "Colors (theme)",
+    colors_custom: "Colors — custom values (hex, rgb(), var(…))",
+    critical: "Critical",
+    low: "Low",
+    medium: "Medium",
+    high: "High",
+    full: "Full",
+    off: "Off (dark segments)",
+    body: "Housing (bar background)",
+    frame: "Frame & terminal",
+    pos: "Positive direction (charging / rising)",
+    neg: "Negative direction (discharging / falling)",
+    name: "Display name",
+    icon: "Icon (empty = entity's own icon)",
+    charging: "Charging sensor (binary_sensor)",
+    power: "Signed power (+charging / −discharging)",
+    charge: "Charge power",
+    discharge: "Discharge power",
+    collect_button: "Collect batteries",
+    collect_added: "{n} added",
+    collect_none: "nothing new found",
+    stub_title_battery: "Batteries",
+    stub_title_generic: "Values",
+    na: "n/a",
+  },
+  de: {
+    title: "Titel",
+    entities: "Entitäten",
+    segments: "Segmente pro Balken",
+    columns: "Spalten",
+    bar_height: "Höhe der Balken (px)",
+    row_gap: "Abstand zwischen den Spalten (px)",
+    name_width: "Breite der Beschriftung (auto, 30%, 120px …)",
+    state_width: "Breite des Werts (auto, 3.2em, 60px …)",
+    precision: "Nachkommastellen (leer = wie die Entität)",
+    show_icon: "Symbol anzeigen",
+    show_name: "Name anzeigen",
+    show_state: "Prozentwert anzeigen",
+    show_flow: "Ladefluss-Pfeil anzeigen",
+    animate_flow: "Pfeil animieren",
+    flow_style: "Wo die Richtung steht",
+    animation: "Animation",
+    pulse_travel: "Puls: Dauer eines Durchlaufs (s)",
+    pulse_period: "Puls: Abstand zwischen Durchläufen (s)",
+    pulse_width: "Puls: Breite (Segmente gleichzeitig aus)",
+    blink_tip: "Spitze zusätzlich blinken lassen",
+    peak: "Peak-Hold-Marke",
+    peak_hold: "Peak halten (s)",
+    color_state: "Wert in Richtungsfarbe",
+    flow_full_scale: "Voller Ladefluss bei … (Tempo-Maßstab)",
+    color_mode: "Färbung",
+    preset: "Farbvoreinstellung (Rampe)",
+    surface: "Gehäuse-Voreinstellung",
+    min: "Minimum (= 0 %)",
+    max: "Maximum (= 100 %)",
+    trend_flow: "Pfeil aus dem eigenen Verlauf",
+    trend_hold: "Pfeil halten (s)",
+    trend_deadband: "Trend-Schwelle (% Änderung, darunter = Ruhe)",
+    trend_history: "Verlauf beim Laden abfragen",
+    trend_full_scale: "Volles Tempo bei … %/min",
+    cap: "Pluspol anzeigen",
+    cap_size: "Pluspol-Größe (px)",
+    frame_width: "Rahmenstärke (px, 0 = kein Rahmen)",
+    sort: "Niedrigster Stand zuerst",
+    warn_below: "Warnung blinkt unter … % (0 = aus)",
+    show_last_changed: "Letzte Änderung anzeigen",
+    deadband: "Ladefluss-Schwelle (leer = Karten-Standard)",
+    auto: "Batterien automatisch einsammeln",
+    auto_area: "… nur aus diesen Bereichen",
+    auto_exclude: "… diese ausschließen",
+    rebuild_delay: "Umbau-Verzögerung (s)",
+    items: "Gewählte Entitäten",
+    entity: "Entität (leeren = entfernen)",
+    add: "＋ Entität hinzufügen",
+    thresholds: "Schwellen (%)",
+    colors: "Farben (Theme)",
+    colors_custom: "Farben — eigene Werte (Hex, rgb(), var(…))",
+    critical: "Kritisch",
+    low: "Niedrig",
+    medium: "Mittel",
+    high: "Hoch",
+    full: "Voll",
+    off: "Aus (dunkle Segmente)",
+    body: "Gehäuse (Hintergrund der Balken)",
+    frame: "Rahmen & Pluspol",
+    pos: "Richtung positiv (lädt / steigt)",
+    neg: "Richtung negativ (entlädt / fällt)",
+    name: "Anzeigename",
+    icon: "Symbol (leer = Symbol der Entität)",
+    charging: "Lade-Sensor (binary_sensor)",
+    power: "Leistung vorzeichenbehaftet (+laden / −entladen)",
+    charge: "Ladeleistung",
+    discharge: "Entladeleistung",
+    collect_button: "Batterien einsammeln",
+    collect_added: "{n} hinzugefügt",
+    collect_none: "nichts Neues gefunden",
+    stub_title_battery: "Batterien",
+    stub_title_generic: "Werte",
+    na: "n/v",
+  },
 };
 
 // Was auf der Gauge-Karte anders heißt — dort gibt es keinen "Ladefluss", nur einen Trend.
 const GENERIC_LABELS = {
-  show_flow: "Trend-Pfeil anzeigen",
-  animate_flow: "Trend-Pfeil animieren",
-  items: "Gewählte Entitäten",
+  en: {
+    show_flow: "Show trend arrow",
+    animate_flow: "Animate trend arrow",
+    items: "Selected entities",
+  },
+  de: {
+    show_flow: "Trend-Pfeil anzeigen",
+    animate_flow: "Trend-Pfeil animieren",
+    items: "Gewählte Entitäten",
+  },
 };
 
-/** Beschriftung eines Feldes. `??` würde ein `false` durchlassen — daher explizit. */
-export const labelFor = (schema, generic, labels = LABELS, generic_labels = GENERIC_LABELS) =>
+/**
+ * Beschriftung eines Feldes. `??` würde ein `false` durchlassen — daher explizit.
+ * `labels`/`generic_labels` sind bereits die Wörterbücher EINER Sprache (LABELS[lang]),
+ * nicht die ganze Sprachtabelle — der Aufrufer wählt die Sprache, diese Funktion bleibt
+ * eine reine, sprachunabhängige Lookup-Funktion.
+ */
+export const labelFor = (schema, generic, labels = LABELS.en, generic_labels = GENERIC_LABELS.en) =>
   schema.label ?? (generic ? generic_labels[schema.name] : undefined)
   ?? labels[schema.name] ?? schema.name;
+
+// Beschriftungen der Auswahl-Optionen (animation/flow_style/preset/surface/color_mode) —
+// separat von LABELS, weil das keine Feldnamen sind, sondern Werte innerhalb eines Felds.
+const OPTION_LABELS = {
+  en: {
+    animation_none: "Off",
+    animation_blink: "Blink — leading segment, on flow",
+    animation_blink_always: "Blink — leading segment, always",
+    animation_pulse: "Pulse — one LED travels in flow direction",
+    animation_fill: "Fill — rises from 0 to level, reverses on discharge",
+    flow_style_arrow: "Own column next to the bar",
+    flow_style_alternate: "Alternates with the value (saves space)",
+    preset_standard: "Standard (tomato → limegreen)",
+    preset_led_classic: "LED classic (red → cyan)",
+    preset_ampel: "Traffic light (muted)",
+    preset_neon: "Neon",
+    preset_mono: "Monochrome (theme primary color)",
+    preset_invers: "Inverse — full = red",
+    surface_classic: "Classic — black housing like led.jpg",
+    surface_glass: "Translucent — for glass/gradient themes",
+    surface_flat: "No housing — segments only",
+    color_mode_level: "Whole bar in the level's color",
+    color_mode_segment: "Each segment by its own threshold",
+  },
+  de: {
+    animation_none: "Aus",
+    animation_blink: "Blinken — führendes Segment, bei Fluss",
+    animation_blink_always: "Blinken — führendes Segment, immer",
+    animation_pulse: "Puls — eine LED wandert in Flussrichtung aus",
+    animation_fill: "Füllen — läuft von 0 zum Stand hoch, entladen rückwärts",
+    flow_style_arrow: "Eigene Spalte neben dem Balken",
+    flow_style_alternate: "Abwechselnd mit dem Wert (spart Platz)",
+    preset_standard: "Standard (tomato → limegreen)",
+    preset_led_classic: "LED klassisch (rot → cyan)",
+    preset_ampel: "Ampel (gedeckt)",
+    preset_neon: "Neon",
+    preset_mono: "Einfarbig (Theme-Primärfarbe)",
+    preset_invers: "Invers — voll = rot",
+    surface_classic: "Klassisch — schwarzes Gehäuse wie led.jpg",
+    surface_glass: "Durchscheinend — für Glas-/Verlaufs-Themes",
+    surface_flat: "Ohne Gehäuse — nur Segmente",
+    color_mode_level: "Ganzer Balken in der Farbe der Stufe",
+    color_mode_segment: "Jedes Segment nach eigener Schwelle",
+  },
+};
 
 const num = (min, max, step = 1) => ({ number: { min, max, step, mode: "box" } });
 const ent = (filter) => ({ entity: filter ? { filter } : {} });
@@ -965,7 +1119,9 @@ const itemFields = (generic) =>
 
 const BASE_SCHEMA = [{ name: "title", selector: { text: {} } }];
 
-const tailSchema = (generic) => [
+const tailSchema = (generic, lang = "en") => {
+  const O = OPTION_LABELS[lang];
+  return [
   {
     type: "grid",
     schema: [
@@ -991,11 +1147,11 @@ const tailSchema = (generic) => [
           select: {
             mode: "dropdown",
             options: [
-              { value: "none", label: "Aus" },
-              { value: "blink", label: "Blinken — führendes Segment, bei Fluss" },
-              { value: "blink_always", label: "Blinken — führendes Segment, immer" },
-              { value: "pulse", label: "Puls — eine LED wandert in Flussrichtung aus" },
-              { value: "fill", label: "Füllen — läuft von 0 zum Stand hoch, entladen rückwärts" },
+              { value: "none", label: O.animation_none },
+              { value: "blink", label: O.animation_blink },
+              { value: "blink_always", label: O.animation_blink_always },
+              { value: "pulse", label: O.animation_pulse },
+              { value: "fill", label: O.animation_fill },
             ],
           },
         },
@@ -1010,8 +1166,8 @@ const tailSchema = (generic) => [
           select: {
             mode: "dropdown",
             options: [
-              { value: "arrow", label: "Eigene Spalte neben dem Balken" },
-              { value: "alternate", label: "Abwechselnd mit dem Wert (spart Platz)" },
+              { value: "arrow", label: O.flow_style_arrow },
+              { value: "alternate", label: O.flow_style_alternate },
             ],
           },
         },
@@ -1038,12 +1194,12 @@ const tailSchema = (generic) => [
           select: {
             mode: "dropdown",
             options: [
-              { value: "standard", label: "Standard (tomato → limegreen)" },
-              { value: "led-classic", label: "LED klassisch (rot → cyan)" },
-              { value: "ampel", label: "Ampel (gedeckt)" },
-              { value: "neon", label: "Neon" },
-              { value: "mono", label: "Einfarbig (Theme-Primärfarbe)" },
-              { value: "invers", label: "Invers — voll = rot" },
+              { value: "standard", label: O.preset_standard },
+              { value: "led-classic", label: O.preset_led_classic },
+              { value: "ampel", label: O.preset_ampel },
+              { value: "neon", label: O.preset_neon },
+              { value: "mono", label: O.preset_mono },
+              { value: "invers", label: O.preset_invers },
             ],
           },
         },
@@ -1054,9 +1210,9 @@ const tailSchema = (generic) => [
           select: {
             mode: "dropdown",
             options: [
-              { value: "classic", label: "Klassisch — schwarzes Gehäuse wie led.jpg" },
-              { value: "glass", label: "Durchscheinend — für Glas-/Verlaufs-Themes" },
-              { value: "flat", label: "Ohne Gehäuse — nur Segmente" },
+              { value: "classic", label: O.surface_classic },
+              { value: "glass", label: O.surface_glass },
+              { value: "flat", label: O.surface_flat },
             ],
           },
         },
@@ -1067,8 +1223,8 @@ const tailSchema = (generic) => [
           select: {
             mode: "dropdown",
             options: [
-              { value: "level", label: "Ganzer Balken in der Farbe der Stufe" },
-              { value: "segment", label: "Jedes Segment nach eigener Schwelle" },
+              { value: "level", label: O.color_mode_level },
+              { value: "segment", label: O.color_mode_segment },
             ],
           },
         },
@@ -1080,16 +1236,17 @@ const tailSchema = (generic) => [
   {
     type: "expandable",
     name: "thresholds",
-    title: LABELS.thresholds,
+    title: LABELS[lang].thresholds,
     schema: ["critical", "low", "medium", "high"].map((name) => ({ name, selector: num(0, 100) })),
   },
   {
     type: "expandable",
     name: "colors",
-    title: LABELS.colors,
+    title: LABELS[lang].colors,
     schema: COLOR_KEYS.map(([name]) => ({ name, selector: { ui_color: {} } })),
   },
-];
+  ];
+};
 
 // Zusätzlich ein eigener Block für alles, was der Theme-Wähler nicht kann (Hex, Alpha, var()).
 const COLOR_KEYS = [
@@ -1105,12 +1262,12 @@ const COLOR_KEYS = [
  * Ein aufklappbarer Block je Entität — Auswahl, Name und Ladefluss an einer Stelle —
  * plus ein leerer Block am Ende zum Anhängen.
  */
-const itemsSchema = (entities, hass, generic) => {
+const itemsSchema = (entities, hass, generic, lang = "en") => {
   const fields = itemFields(generic);
   return {
     type: "expandable",
     name: "items",
-    title: LABELS.items,
+    title: LABELS[lang].items,
     schema: [
       ...entities.map((e, i) => ({
         type: "expandable",
@@ -1118,7 +1275,7 @@ const itemsSchema = (entities, hass, generic) => {
         title: e.name || hass?.states[e.entity]?.attributes?.friendly_name || e.entity,
         schema: fields,
       })),
-      { type: "expandable", name: "new", title: LABELS.add, schema: fields },
+      { type: "expandable", name: "new", title: LABELS[lang].add, schema: fields },
     ],
   };
 };
@@ -1152,6 +1309,9 @@ class BatteryLedCardEditor extends Base {
   }
 
   async _render() {
+    // hass.language ist die UI-Sprache des Nutzers, nicht hass.locale.language (das steuert
+    // nur Zahlen-/Datumsformate und kann davon abweichen) - hier ist die UI-Sprache richtig.
+    this._lang = pickLang(this._hass?.language);
     if (!this._form) {
       // erzwingt das Nachladen der HA-Formularelemente, falls noch nicht registriert
       if (!customElements.get("ha-form")) {
@@ -1160,7 +1320,7 @@ class BatteryLedCardEditor extends Base {
           .constructor.getConfigElement();
       }
       this._form = document.createElement("ha-form");
-      this._form.computeLabel = (s) => labelFor(s, this._generic);
+      this._form.computeLabel = (s) => labelFor(s, this._generic, LABELS[this._lang], GENERIC_LABELS[this._lang]);
       this._form.addEventListener("value-changed", (ev) => this._valueChanged(ev));
       const style = document.createElement("style");
       style.textContent = CSS;
@@ -1175,8 +1335,8 @@ class BatteryLedCardEditor extends Base {
     this._form.hass = this._hass;
     this._form.schema = [
       ...BASE_SCHEMA,
-      itemsSchema(items, this._hass, this._generic),
-      ...tailSchema(this._generic),
+      itemsSchema(items, this._hass, this._generic, this._lang),
+      ...tailSchema(this._generic, this._lang),
     ];
     this._form.data = {
       ...DEFAULTS,                            // sonst stehen ungesetzte Schalter im Editor auf aus
@@ -1194,7 +1354,7 @@ class BatteryLedCardEditor extends Base {
     box.className = "tools";
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.textContent = "Batterien einsammeln";
+    btn.textContent = LABELS[this._lang].collect_button;
     btn.addEventListener("click", () => this._collect());
     this._hint = document.createElement("span");
     this._hint.className = "hint";
@@ -1205,27 +1365,31 @@ class BatteryLedCardEditor extends Base {
   _collect() {
     const have = (this._config.entities ?? []).map((e) => e.entity ?? e);
     const found = autoEntities(this._hass, { exclude: have });
+    const L = LABELS[this._lang];
     this._hint.textContent = found.length
-      ? `${found.length} hinzugefügt`
-      : "nichts Neues gefunden";
+      ? L.collect_added.replace("{n}", found.length)
+      : L.collect_none;
     if (!found.length) return;
     this._emit({ ...this._config, entities: [...(this._config.entities ?? []), ...found] });
   }
 
   /** Je Stufe: Farbwähler + Freitext (Hex mit/ohne Raute, CSS-Name, rgb(), var()). */
   _buildColors() {
+    const L = LABELS[this._lang];
     const box = document.createElement("details");
     box.className = "colorbox";
-    box.innerHTML = `<summary>${LABELS.colors_custom}</summary>`;
+    box.innerHTML = `<summary>${L.colors_custom}</summary>`;
     this._colorRows = COLOR_KEYS.map(([key, def]) => {
       const row = document.createElement("div");
       row.className = "crow";
       row.innerHTML = `<label></label><input type="color"><input type="text" spellcheck="false">`;
-      row.querySelector("label").textContent = LABELS[key];
+      row.querySelector("label").textContent = L[key];
       const [sw, tx] = row.querySelectorAll("input");
       tx.placeholder = def;                   // leer = Default, Platzhalter zeigt welchen
-      tx.title = "Hex (#2ed0d8 oder 2ed0d8), CSS-Name (tomato), rgb(…), rgba(…), var(--x)";
-      if (def.startsWith("color-mix") || def.startsWith("var(")) tx.placeholder = "aus dem Theme";
+      tx.title = this._lang === "de"
+        ? "Hex (#2ed0d8 oder 2ed0d8), CSS-Name (tomato), rgb(…), rgba(…), var(--x)"
+        : "Hex (#2ed0d8 or 2ed0d8), CSS name (tomato), rgb(…), rgba(…), var(--x)";
+      if (def.startsWith("color-mix") || def.startsWith("var(")) tx.placeholder = this._lang === "de" ? "aus dem Theme" : "from theme";
       sw.addEventListener("input", () => {
         tx.value = sw.value;
         this._colorChanged(key, sw.value);
@@ -1293,21 +1457,34 @@ if (globalThis.customElements && !customElements.get("battery-led-card")) {
     static getConfigElement() {
       return document.createElement("led-gauge-card-editor");
     }
-    static getStubConfig() {
-      return { title: "Werte", entities: [] };
+    static getStubConfig(hass) {
+      return { title: LABELS[pickLang(hass?.language)].stub_title_generic, entities: [] };
     }
   });
   customElements.define("led-gauge-card-editor", class extends BatteryLedCardEditor {});
+  // Läuft einmalig beim Modul-Laden, vor jeder hass-Instanz - hass.language ist hier noch
+  // nicht bekannt, daher als einmaliger Kompromiss die Browsersprache.
+  const _regLang = pickLang(globalThis.navigator?.language);
+  const _cardDesc = {
+    en: {
+      battery: "Battery levels as a horizontal LED bar panel",
+      gauge: "Any numeric value as an LED bar panel, with min/max per row",
+    },
+    de: {
+      battery: "Batteriestände als quer liegendes LED-Balkenpanel",
+      gauge: "Beliebige Zahlenwerte als LED-Balkenpanel, mit min/max je Zeile",
+    },
+  }[_regLang];
   (window.customCards = window.customCards || []).push({
     type: "battery-led-card",
     name: "Battery LED Card",
-    description: `Batteriestände als quer liegendes LED-Balkenpanel (v${VERSION})`,
+    description: `${_cardDesc.battery} (v${VERSION})`,
     preview: true,
   });
   window.customCards.push({
     type: "led-gauge-card",
     name: "LED Gauge Card",
-    description: `Beliebige Zahlenwerte als LED-Balkenpanel, mit min/max je Zeile (v${VERSION})`,
+    description: `${_cardDesc.gauge} (v${VERSION})`,
     preview: true,
   });
 }
