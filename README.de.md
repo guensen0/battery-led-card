@@ -14,9 +14,8 @@ Zwei Lovelace-Karten, eine Datei, eine Ressource:
 Beide teilen sich Balken, Farben, Schwellen, Ladefluss und Editor; unten steht, wo sie sich
 unterscheiden.
 
-Batterie-Entitäten als quer liegendes LED-Segmentpanel (Vorlage: `led.jpg`,
-aber horizontal und mit mehr Balken). Eine Zeile pro Entität, Klick öffnet den More-Info-Dialog.
-Konfiguration komplett über den grafischen Editor.
+Batterie-Entitäten als quer liegendes LED-Segmentpanel. Eine Zeile pro Entität, Klick öffnet
+den More-Info-Dialog. Konfiguration komplett über den grafischen Editor.
 
 <video src="https://raw.githubusercontent.com/guensen0/battery-led-card/main/led_shot.mp4" controls autoplay muted loop width="500"></video>
 
@@ -169,7 +168,7 @@ Werte unterhalb der Ladefluss-Schwelle gelten als Ruhe.
 | Wert | Rampe |
 |---|---|
 | `standard` | tomato → orange → gold → yellowgreen → limegreen |
-| `led-classic` | rot → orange → gelb → grün → cyan, wie `led.jpg` |
+| `led-classic` | rot → orange → gelb → grün → cyan |
 | `ampel` | gedeckte Ampelfarben, `#d32f2f` → `#388e3c` |
 | `neon` | knallig, für dunkle Themes |
 | `mono` | alle Stufen in `var(--primary-color)` — Länge zählt, nicht Farbe |
@@ -191,7 +190,7 @@ Die Platzhalter im Farbeditor zeigen immer die Werte der gewählten Voreinstellu
 | `glass` | Textfarbe 7 % auf transparent | 18 % | 25 % |
 | `flat` | `transparent` | Textfarbe 15 % | keiner |
 
-`classic` ist der schwarze Batteriekörper aus `led.jpg` und die Voreinstellung — passt zu den
+`classic` ist der schwarze Batteriekörper-Look und die Voreinstellung — passt zu den
 Standard-Themes, hell wie dunkel. **`glass`** ist für Themes mit durchscheinenden oder
 verlaufenden Karten (z. B. *kibbit-dark-cards*): nichts wird übermalt, die Karte scheint
 durch, im hellen Theme kippt derselbe Schleier ins Dunkle. `flat` lässt das Gehäuse ganz weg.
@@ -239,7 +238,7 @@ scheint die Karte durch, auch bei Themes mit durchscheinenden oder verlaufenden 
 hellen Theme wird derselbe Schleier dunkel statt hell. Die LED-Farben selbst bleiben fest,
 sonst wäre die Rampe in jedem Theme anders.
 
-Den klassischen schwarzen Batteriekörper aus `led.jpg` bekommst du unabhängig vom Theme mit:
+Den klassischen schwarzen Batteriekörper-Look bekommst du unabhängig vom Theme mit:
 
 ```yaml
 colors:

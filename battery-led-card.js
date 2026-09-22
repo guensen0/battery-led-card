@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.6.1";
+export const VERSION = "4.6.2";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -1059,7 +1059,7 @@ const OPTION_LABELS = {
     preset_neon: "Neon",
     preset_mono: "Monochrome (theme primary color)",
     preset_invers: "Inverse — full = red",
-    surface_classic: "Classic — black housing like led.jpg",
+    surface_classic: "Classic — black housing",
     surface_glass: "Translucent — for glass/gradient themes",
     surface_flat: "No housing — segments only",
     color_mode_level: "Whole bar in the level's color",
@@ -1079,7 +1079,7 @@ const OPTION_LABELS = {
     preset_neon: "Neon",
     preset_mono: "Einfarbig (Theme-Primärfarbe)",
     preset_invers: "Invers — voll = rot",
-    surface_classic: "Klassisch — schwarzes Gehäuse wie led.jpg",
+    surface_classic: "Klassisch — schwarzes Gehäuse",
     surface_glass: "Durchscheinend — für Glas-/Verlaufs-Themes",
     surface_flat: "Ohne Gehäuse — nur Segmente",
     color_mode_level: "Ganzer Balken in der Farbe der Stufe",

@@ -13,9 +13,8 @@ Two Lovelace cards, one file, one resource:
 
 Both share bars, colors, thresholds, charge flow and the editor; below is where they differ.
 
-Battery entities as a horizontal LED segment panel (inspired by `led.jpg`, but horizontal
-and with more bars). One row per entity, click opens the more-info dialog. Fully configurable
-through the visual editor.
+Battery entities as a horizontal LED segment panel. One row per entity, click opens the
+more-info dialog. Fully configurable through the visual editor.
 
 <video src="https://raw.githubusercontent.com/guensen0/battery-led-card/main/led_shot.mp4" controls autoplay muted loop width="500"></video>
 
@@ -167,7 +166,7 @@ doesn't know that. Values below the charge-flow threshold count as idle.
 | Value | Ramp |
 |---|---|
 | `standard` | tomato → orange → gold → yellowgreen → limegreen |
-| `led-classic` | red → orange → yellow → green → cyan, like `led.jpg` |
+| `led-classic` | red → orange → yellow → green → cyan |
 | `ampel` | muted traffic-light colors, `#d32f2f` → `#388e3c` |
 | `neon` | vivid, for dark themes |
 | `mono` | every level in `var(--primary-color)` — length matters, not color |
@@ -189,7 +188,7 @@ The placeholders in the color editor always show the values of the selected pres
 | `glass` | text color at 7% over transparent | 18% | 25% |
 | `flat` | `transparent` | text color at 15% | none |
 
-`classic` is the black battery body from `led.jpg` and the default — matches the standard
+`classic` is the black battery-body look and the default — matches the standard
 themes, light and dark alike. **`glass`** is for themes with translucent or gradient cards
 (e.g. *kibbit-dark-cards*): nothing is painted over, the card shows through, and in a light
 theme the same veil turns dark instead of light. `flat` drops the housing entirely.
@@ -238,7 +237,7 @@ through even with themes that have translucent or gradient cards; in a light the
 veil turns dark instead of light. The LED colors themselves stay fixed, otherwise the ramp
 would look different in every theme.
 
-To get the classic black battery body from `led.jpg` regardless of theme:
+To get the classic black battery-body look regardless of theme:
 
 ```yaml
 colors:
