@@ -18,7 +18,7 @@ Batterie-Entitäten als quer liegendes LED-Segmentpanel (Vorlage: `led.jpg`,
 aber horizontal und mit mehr Balken). Eine Zeile pro Entität, Klick öffnet den More-Info-Dialog.
 Konfiguration komplett über den grafischen Editor.
 
-![Battery LED Card im Einsatz](led_mov.png)
+<video src="https://raw.githubusercontent.com/guensen0/battery-led-card/main/led_shot.mp4" controls autoplay muted loop width="500"></video>
 
 ## Installation
 

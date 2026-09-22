@@ -17,7 +17,7 @@ Battery entities as a horizontal LED segment panel (inspired by `led.jpg`, but h
 and with more bars). One row per entity, click opens the more-info dialog. Fully configurable
 through the visual editor.
 
-![Battery LED Card in use](led_mov.png)
+<video src="https://raw.githubusercontent.com/guensen0/battery-led-card/main/led_shot.mp4" controls autoplay muted loop width="500"></video>
 
 ## Installation
 
