@@ -2,5 +2,6 @@
   "name": "Battery LED Card",
   "render_readme": true,
   "filename": "battery-led-card.js",
+  "content_in_root": true,
   "homeassistant": "2024.8.0"
 }
