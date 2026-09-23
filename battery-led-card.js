@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.6.2";
+export const VERSION = "4.6.3";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -799,7 +799,15 @@ export class BatteryLedCard extends Base {
 
   connectedCallback() {
     this._nameSig = null;                     // nach dem Einhängen neu messen
-    if (this._rows) this._fitAuto();
+    if (this._rows) {
+      this._fitAuto();
+      // disconnectedCallback raeumt den Wechsel-Timer (_alt) auf - beim
+      // Wiederanhaengen (z.B. Dashboard-Ansicht/Tab gewechselt und zurueck)
+      // muss er hier neu gestartet werden, sonst bleibt flow_style:
+      // "alternate" nach dem ersten Tab-Wechsel fuer immer stehen, obwohl
+      // die Config unveraendert ist.
+      this._tick();
+    }
   }
 
   /**
