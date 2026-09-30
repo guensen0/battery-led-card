@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.6.0** — zwei Karten aus einer Datei, Editor auf Deutsch/Englisch (folgt `hass.language`)
+**v4.7.0** — zwei Karten aus einer Datei, Editor auf Deutsch/Englisch (folgt `hass.language`)
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -93,9 +93,10 @@ entities:
 | `pulse_travel` | 0,2–20 s | `1.5` | Dauer eines Durchlaufs über die ganze Breite — das **Tempo**, gilt für `pulse` und `fill` |
 | `pulse_period` | 1–60 s | `3` | Zeit von einem Durchlauf zum nächsten — der **Abstand**. Ändert das Tempo nicht; was über `pulse_travel` hinausgeht, ist Standzeit. Kleiner als `pulse_travel` lassen die Durchläufe überlappen |
 | `pulse_width` | 1–8 | `2` | Wie viele Segmente gleichzeitig aus sind — die Breite des wandernden Lochs |
+| `blink_cycles` | 1–10 | `3` | Blinkzahl je Runde, nur für `animation: fill_blink` |
 | `blink_tip` | bool | `false` | Lässt die Spitze zusätzlich zur gewählten Animation blinken, sobald eine Richtung erkannt ist. Bei `fill` und `pulse` kombinierbar, bei `blink` schon enthalten |
-| `animation` | `none` \| `blink` \| `blink_always` \| `pulse` \| `fill` | `none` | `blink`: das letzte leuchtende Segment blinkt, sobald ein Lade-/Entladefluss erkannt ist — in beide Richtungen dasselbe, in der Stufenfarbe des Balkens. `blink_always`: blinkt immer, in der Stufenfarbe, ohne Richtungsaussage. `pulse`: ein dunkles Segment wandert über den leuchtenden Teil, beim Laden nach rechts, beim Entladen nach links; Tempo und Wiederholrate über `pulse_travel`, `pulse_period` und `pulse_width`. Nahe am Verhalten vor 4.2.0 liegt
-`pulse_travel: 3`, `pulse_period: 3`, `pulse_width: 3` — durchgehende Welle ohne Pause. `fill`: die Segmente bis zum Stand leuchten gedimmt und werden der Reihe nach voll hell — beim Laden von 0 nach oben, beim Entladen wird dieselbe Bewegung rückwärts abgespielt, oben geht zuerst aus. Der Füllstand bleibt dabei jederzeit ablesbar, weil nichts ganz ausgeht. Gefüllt wird in `pulse_travel`, danach steht der Balken bis `pulse_period` um ist. Blinken und Pfeil folgen dagegen der Leistung (1,8 s bei ~0 bis 0,35 s ab `flow_full_scale`; ohne messbare Leistung 1,1 s) |
+| `animation` | `none` \| `blink` \| `blink_always` \| `pulse` \| `fill` \| `fill_blink` | `none` | `blink`: das letzte leuchtende Segment blinkt, sobald ein Lade-/Entladefluss erkannt ist — in beide Richtungen dasselbe, in der Stufenfarbe des Balkens. `blink_always`: blinkt immer, in der Stufenfarbe, ohne Richtungsaussage. `pulse`: ein dunkles Segment wandert über den leuchtenden Teil, beim Laden nach rechts, beim Entladen nach links; Tempo und Wiederholrate über `pulse_travel`, `pulse_period` und `pulse_width`. Nahe am Verhalten vor 4.2.0 liegt
+`pulse_travel: 3`, `pulse_period: 3`, `pulse_width: 3` — durchgehende Welle ohne Pause. `fill`: die Segmente bis zum Stand leuchten gedimmt und werden der Reihe nach voll hell — beim Laden von 0 nach oben, beim Entladen wird dieselbe Bewegung rückwärts abgespielt, oben geht zuerst aus. Der Füllstand bleibt dabei jederzeit ablesbar, weil nichts ganz ausgeht. Gefüllt wird in `pulse_travel`, danach steht der Balken bis `pulse_period` um ist. Blinken und Pfeil folgen dagegen der Leistung (1,8 s bei ~0 bis 0,35 s ab `flow_full_scale`; ohne messbare Leistung 1,1 s) `fill_blink`: wie `fill`, aber Füllen und Blinken laufen **nacheinander** statt gleichzeitig — beim Laden füllt sich der Balken, danach blinkt die Spitze `blink_cycles` mal; Entladen ist dieselbe Runde rückwärts, also blinkt erst die Spitze und dann gehen die LEDs von der Spitze nach unten aus. |
 | `flow_full_scale` | number | `1000` | Wert, ab dem die Animation am schnellsten läuft (Einheit der Leistungssensoren) |
 | `cap` | bool | `true` | Pluspol rechts am Balken anzeigen |
 | `frame_width` | 0–6 px | `2` | Stärke des Gehäuserahmens, `0` = kein Rahmen |

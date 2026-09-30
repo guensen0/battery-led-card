@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.6.3";
+export const VERSION = "4.7.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -115,6 +115,31 @@ export const waveTiming = (segments, travel, period, width = 2) => {
  * jederzeit ablesbar bleibt. `span` ist der Anteil der Runde, in dem gefüllt wird; der Rest
  * ist Standzeit, damit die Periode nur den Abstand steuert und nicht das Tempo.
  */
+/**
+ * Wie fillKeyframes, aber mit angehängter Blinkphase: das Segment wird zu seinem Zeitpunkt
+ * hell und blinkt danach `cycles` mal bis zum Rundenende. Nur die Spitze bekommt diese
+ * Regel — die Segmente darunter bleiben nach dem Füllen einfach stehen. Rückwärts
+ * abgespielt ergibt sich das Entladen: erst blinkt die Spitze, dann läuft es aus.
+ */
+export const fillBlinkKeyframes = (
+  name, segments, dim = 0.3, span = 1, cycles = 3, blinkDim = 0.15,
+) =>
+  Array.from({ length: segments }, (_, i) => {
+    const at = (i / segments) * Math.min(1, span) * 100;
+    const w = (100 - at) / Math.max(1, cycles);
+    const stops = [
+      `0%, ${at.toFixed(1)}% { opacity: ${dim}; }`,
+      `${(at + w * 0.05).toFixed(1)}% { opacity: 1; }`,
+    ];
+    for (let k = 0; k < cycles; k++) {
+      const a = at + k * w;
+      stops.push(`${(a + w * 0.3).toFixed(1)}% { opacity: ${blinkDim}; }`);
+      stops.push(`${(a + w * 0.7).toFixed(1)}% { opacity: 1; }`);
+    }
+    stops.push("100% { opacity: 1; }");
+    return `@keyframes ${name}-${i} { ${stops.join(" ")} }`;
+  }).join("\n");
+
 export const fillKeyframes = (name, segments, dim = 0.3, span = 1) =>
   Array.from({ length: segments }, (_, i) => {
     const at = ((i / segments) * Math.min(1, span) * 100).toFixed(1);
@@ -400,6 +425,7 @@ export const DEFAULTS = {
   pulse_period: 3,
   pulse_width: 2,
   blink_tip: false,
+  blink_cycles: 3,
   peak: false,
   peak_hold: 60,
   color_state: true,
@@ -569,11 +595,17 @@ export class BatteryLedCard extends Base {
     const card = document.createElement("ha-card");
     const style = document.createElement("style");
     style.textContent = CSS;
-    if (c.animation === "fill") {
+    if (c.animation === "fill" || c.animation === "fill_blink") {
+      const span = c.pulse_travel / Math.max(0.1, c.pulse_period);
       this._fill = `bl-fill-${++WAVE_ID}`;
-      style.textContent += fillKeyframes(
-        this._fill, c.segments, 0.3, c.pulse_travel / Math.max(0.1, c.pulse_period),
-      );
+      style.textContent += fillKeyframes(this._fill, c.segments, 0.3, span);
+      if (c.animation === "fill_blink") {
+        // eigene Regel nur für die Spitze: füllen, dann blinken
+        this._fillBlink = `bl-fillb-${++WAVE_ID}`;
+        style.textContent += fillBlinkKeyframes(
+          this._fillBlink, c.segments, 0.3, span, c.blink_cycles,
+        );
+      }
     }
     if (c.animation === "pulse") {
       // eigener Name je Karte: das <style> liegt im Light DOM, Keyframes gelten global
@@ -723,7 +755,11 @@ export class BatteryLedCard extends Base {
             flow.rate.trend ? c.trend_full_scale : c.flow_full_scale, 1.8, 0.35);
       const pulse = pulseIndex(c.animation, dir, on, c.segments);
       const wave = c.animation === "pulse" && dir && on > 0;
-      const fill = c.animation === "fill" && dir && on > 0;
+      const fill = (c.animation === "fill" || c.animation === "fill_blink") && dir && on > 0;
+      // bei fill_blink blinkt die Spitze immer, als Teil derselben Regel
+      const seqTip = c.animation === "fill_blink" && dir && on > 0
+        ? Math.min(c.segments - 1, on - 1)
+        : -1;
       // zusätzlich zur gewählten Animation die Spitze blinken lassen
       const blinkAt = pulse >= 0
         ? pulse
@@ -743,8 +779,9 @@ export class BatteryLedCard extends Base {
         if (inFill) {
           // dieselbe Regel je Segment; Entladen ist der Rücklauf davon. Die Spitze bekommt
           // das Blinken als zweite Animation dazu — die gewinnt dort über die Füllung.
-          const two = i === blinkAt;
-          s.style.animationName = two ? `${this._fill}-${i}, bl-pulse` : `${this._fill}-${i}`;
+          const two = i === blinkAt && i !== seqTip;
+          const base = i === seqTip ? `${this._fillBlink}-${i}` : `${this._fill}-${i}`;
+          s.style.animationName = two ? `${base}, bl-pulse` : base;
           s.style.animationDuration = two
             ? `${c.pulse_period}s, ${pulseDur}s`
             : `${c.pulse_period}s`;
@@ -895,6 +932,7 @@ const LABELS = {
     pulse_period: "Pulse: gap between passes (s)",
     pulse_width: "Pulse: width (segments dark at once)",
     blink_tip: "Also blink the tip",
+    blink_cycles: "Blinks per round (fill + blink)",
     peak: "Peak-hold mark",
     peak_hold: "Hold peak (s)",
     color_state: "Value in direction color",
@@ -970,6 +1008,7 @@ const LABELS = {
     pulse_period: "Puls: Abstand zwischen Durchläufen (s)",
     pulse_width: "Puls: Breite (Segmente gleichzeitig aus)",
     blink_tip: "Spitze zusätzlich blinken lassen",
+    blink_cycles: "Blinkzahl je Runde (Füllen + Blinken)",
     peak: "Peak-Hold-Marke",
     peak_hold: "Peak halten (s)",
     color_state: "Wert in Richtungsfarbe",
@@ -1059,6 +1098,7 @@ const OPTION_LABELS = {
     animation_blink_always: "Blink — leading segment, always",
     animation_pulse: "Pulse — one LED travels in flow direction",
     animation_fill: "Fill — rises from 0 to level, reverses on discharge",
+    animation_fill_blink: "Fill + blink — one after the other, tip blinks n times",
     flow_style_arrow: "Own column next to the bar",
     flow_style_alternate: "Alternates with the value (saves space)",
     preset_standard: "Standard (tomato → limegreen)",
@@ -1079,6 +1119,7 @@ const OPTION_LABELS = {
     animation_blink_always: "Blinken — führendes Segment, immer",
     animation_pulse: "Puls — eine LED wandert in Flussrichtung aus",
     animation_fill: "Füllen — läuft von 0 zum Stand hoch, entladen rückwärts",
+    animation_fill_blink: "Füllen + Blinken — nacheinander, Spitze blinkt n-mal",
     flow_style_arrow: "Eigene Spalte neben dem Balken",
     flow_style_alternate: "Abwechselnd mit dem Wert (spart Platz)",
     preset_standard: "Standard (tomato → limegreen)",
@@ -1160,6 +1201,7 @@ const tailSchema = (generic, lang = "en") => {
               { value: "blink_always", label: O.animation_blink_always },
               { value: "pulse", label: O.animation_pulse },
               { value: "fill", label: O.animation_fill },
+              { value: "fill_blink", label: O.animation_fill_blink },
             ],
           },
         },
@@ -1168,6 +1210,7 @@ const tailSchema = (generic, lang = "en") => {
       { name: "pulse_period", selector: num(1, 60, 0.5) },
       { name: "pulse_width", selector: num(1, 8, 0.5) },
       { name: "blink_tip", selector: { boolean: {} } },
+      { name: "blink_cycles", selector: num(1, 10) },
       {
         name: "flow_style",
         selector: {
