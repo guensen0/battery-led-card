@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.7.0** — zwei Karten aus einer Datei, Editor auf Deutsch/Englisch (folgt `hass.language`)
+**v4.7.0** — neue Animation `fill_blink`: Füllen und Blinken laufen nacheinander
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 

@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.7.0** — two cards from one file, editor in English/German (follows `hass.language`)
+**v4.7.0** — new animation `fill_blink`: filling and blinking run one after the other
 
 Two Lovelace cards, one file, one resource:
 

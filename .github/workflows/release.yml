@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0          # für die automatischen Release-Notes aus den Commits
+          fetch-depth: 0          # Tag-Objekt und Historie werden unten gebraucht
 
       - name: Version im Tag gegen battery-led-card.js prüfen
         run: |
@@ -25,6 +25,21 @@ jobs:
           echo "Tag: $tag / Datei: $file"
           [ "$tag" = "$file" ] || { echo "::error::Tag $tag passt nicht zu VERSION $file"; exit 1; }
 
+      # Release-Text ist die Nachricht des annotierten Tags:
+      #   git tag -a v4.8.0 -m "Was neu ist …"
+      # Bei einem leichtgewichtigen Tag bleibt der Text leer, dann greift die
+      # automatische Erzeugung weiter unten.
+      - name: Release-Text aus der Tag-Nachricht holen
+        id: notes
+        run: |
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          {
+            echo "body<<TAGMSG"
+            git tag -l --format='%(contents)' "${GITHUB_REF_NAME}"
+            echo "TAGMSG"
+          } >> "$GITHUB_OUTPUT"
+
       - uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body: ${{ steps.notes.outputs.body }}
+          generate_release_notes: true     # hängt "Full Changelog" an den Text an
