@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.11.1";
+export const VERSION = "4.11.2";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -126,7 +126,7 @@ export const fillBlinkKeyframes = (
   name, segments, dim = 0.3, span = 1, cycles = 3, blinkDim = 0.15,
 ) =>
   Array.from({ length: segments }, (_, i) => {
-    const at = (i / segments) * Math.min(1, span) * 100;
+    const at = ((i + 0.5) / segments) * Math.min(1, span) * 100;
     const w = (100 - at) / Math.max(1, cycles);
     const stops = [
       `0%, ${at.toFixed(1)}% { opacity: ${dim}; }`,
@@ -143,7 +143,7 @@ export const fillBlinkKeyframes = (
 
 export const fillKeyframes = (name, segments, dim = 0.3, span = 1) =>
   Array.from({ length: segments }, (_, i) => {
-    const at = ((i / segments) * Math.min(1, span) * 100).toFixed(1);
+    const at = (((i + 0.5) / segments) * Math.min(1, span) * 100).toFixed(1);
     return `@keyframes ${name}-${i} {
       0%, ${at}% { opacity: ${dim}; }
       ${(Number(at) + 0.1).toFixed(1)}%, 100% { opacity: 1; }

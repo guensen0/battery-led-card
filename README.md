@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.11.1** — `blink_tip` only adds to `pulse` and `fill`, so `animation: none` really is off
+**v4.11.2** — `fill` now starts from a truly empty bar
 
 Two Lovelace cards, one file, one resource:
 
