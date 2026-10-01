@@ -107,7 +107,7 @@ entities:
 | `surface` | `classic` \| `glass` \| `flat` | `classic` | housing, unlit segments and frame |
 | `color_state` | bool | `true` | value on the right in the direction color, as soon as a flow is detected |
 | `color_mode` | `level` \| `segment` | `level` | `level`: the whole bar carries the color of the current level. `segment`: each segment has its own color by the threshold it covers — the ramp then runs left to right |
-| `warn_below` | 0–100 | `0` | the bar blinks below this level, `0` = off |
+| `warn_below` | 0–100 | `0` | below this level the bar pulses and the value is set in bold, `0` = off. The **colour** of the value stays reserved for the charge direction, so the two never contradict each other |
 | `show_last_changed` | bool | `false` | "3 hours ago" next to the name — exposes dead sensors |
 | `deadband` | number | `1` | charge-flow threshold (default for all rows), in the unit of the power sensors |
 | `auto` | bool | `false` | collect all `device_class: battery` entities |
