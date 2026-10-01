@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.7.0** — new animation `fill_blink`: filling and blinking run one after the other
+**v4.8.0** — reserve per battery, drawn in its own color
 
 Two Lovelace cards, one file, one resource:
 
@@ -93,6 +93,7 @@ entities:
 | `pulse_period` | 1–60 s | `3` | time from one pass to the next — the **gap**. Doesn't change the speed; anything beyond `pulse_travel` is idle time. Smaller than `pulse_travel` lets passes overlap |
 | `pulse_width` | 1–8 | `2` | how many segments are dark at once — the width of the travelling gap |
 | `blink_cycles` | 1–10 | `3` | number of blinks per round, for `animation: fill_blink` only |
+| `reserve` | number \| entity | – | Share of the bar that is not usable (battery reserve / minimum SoC). Either a plain number or an entity that provides it; a `%` in the entity state is ignored. Also settable per row, where it overrides the card value |
 | `blink_tip` | bool | `false` | makes the tip blink in addition to the chosen animation, as soon as a direction is detected. Combinable with `fill` and `pulse`; already included in `blink` |
 | `animation` | `none` \| `blink` \| `blink_always` \| `pulse` \| `fill` \| `fill_blink` | `none` | `blink`: the last lit segment blinks as soon as a charge/discharge flow is detected — same in both directions, in the bar's level color. `blink_always`: always blinks, in the level color, without indicating direction. `pulse`: a dark segment travels across the lit part, right while charging, left while discharging; speed and repeat rate via `pulse_travel`, `pulse_period` and `pulse_width`. Close to the pre-4.2.0 behavior:
 `pulse_travel: 3`, `pulse_period: 3`, `pulse_width: 3` — a continuous wave with no pause. `fill`: the segments up to the level light up dimmed and turn fully bright one by one — upward from 0 while charging, the same motion reversed while discharging, with the top going dark first. The level stays readable at all times because nothing ever goes fully dark. Filling happens over `pulse_travel`, then the bar holds until `pulse_period` is up. Blinking and the arrow, on the other hand, follow the actual power (1.8 s near 0 down to 0.35 s at `flow_full_scale`; 1.1 s without a measurable power value) `fill_blink`: same as `fill`, but filling and blinking run **one after the other** instead of at the same time — while charging the bar fills up and the tip then blinks `blink_cycles` times; discharging is the same round played backwards, so the tip blinks first and the LEDs go out from the tip downward. |
@@ -145,6 +146,7 @@ flapping would postpone the rebuild forever. `0` = immediately.
 | `name` | display name instead of `friendly_name` / entity ID |
 | `icon` | icon instead of the entity's own, e.g. `mdi:home-battery` |
 | `precision` | decimal places for this row only |
+| `reserve` | reserve for this row — a number or the entity that provides it |
 | `charging` | `binary_sensor`, `on` = charging |
 | `power` | a signed sensor: `+` charging, `−` discharging |
 | `charge` + `discharge` | two separate power sensors, the larger one wins |
@@ -209,6 +211,7 @@ beat both `surface` and `preset`.
 | `off` | – | unlit segments — mixed from the theme by default |
 | `body` | – | housing behind the segments — mixed from the theme by default |
 | `frame` | – | frame and terminal, default `var(--divider-color)` |
+| `reserve` | – | segments below the reserve — present, but not usable |
 | `pos` | – | positive direction (charging / rising), default `var(--success-color)` — colors the arrow and value, not the segments |
 | `neg` | – | negative direction (discharging / falling), default `var(--error-color)`, i.e. red |
 

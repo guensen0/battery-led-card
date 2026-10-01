@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.7.0";
+export const VERSION = "4.8.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -23,6 +23,7 @@ export const SURFACES = {
   flat: { body: "transparent", off: shade(15), frame: "transparent" },
 };
 const { body: BODY, off: OFF, frame: FRAME } = SURFACES.classic;
+const RESERVE = shade(45);   // Segmente unterhalb der Reserve: da, aber nicht nutzbar
 
 const FLOW_DEFAULT = {
   charging: "var(--success-color, #2ec13c)",
@@ -186,6 +187,20 @@ export const batteryLevel = (st) => {
   if (st.state === "on") return 0;   // binary_sensor battery: on == leer
   if (st.state === "off") return 100;
   return null;
+};
+
+/**
+ * Reserve einer Zeile: entweder direkt eine Zahl oder die Entität, die sie liefert.
+ * Ein "%" im Zustand wird abgeschnitten — manche Integrationen liefern "10 %" als Text.
+ */
+export const reserveLevel = (raw, states = {}) => {
+  if (raw === null || raw === undefined || raw === "") return null;
+  const direct = Number(raw);
+  if (Number.isFinite(direct)) return direct;
+  const st = String(states[raw]?.state ?? "").replace("%", "").trim();
+  if (!st) return null;            // unbekannte Entität ist keine Reserve von 0
+  const v = Number(st);
+  return Number.isFinite(v) ? v : null;
 };
 
 /**
@@ -426,6 +441,7 @@ export const DEFAULTS = {
   pulse_width: 2,
   blink_tip: false,
   blink_cycles: 3,
+  reserve: "",
   peak: false,
   peak_hold: 60,
   color_state: true,
@@ -753,6 +769,16 @@ export class BatteryLedCard extends Base {
         ? 1.1
         : flowDuration(flow.rate.value,
             flow.rate.trend ? c.trend_full_scale : c.flow_full_scale, 1.8, 0.35);
+      // Reserve: der untere Teil des Balkens, der nicht nutzbar ist
+      const resRaw = reserveLevel(item.reserve ?? c.reserve, this._hass.states);
+      const resPct = resRaw === null
+        ? null
+        : this._generic
+          ? scaleValue({ state: resRaw, attributes: {} }, item, c)
+          : resRaw;
+      const reserveOn = resPct === null ? 0 : filledSegments(resPct, c.segments);
+      const reserveCol = toCss(c.colors.reserve ?? RESERVE);
+
       const pulse = pulseIndex(c.animation, dir, on, c.segments);
       const wave = c.animation === "pulse" && dir && on > 0;
       const fill = (c.animation === "fill" || c.animation === "fill_blink") && dir && on > 0;
@@ -766,7 +792,9 @@ export class BatteryLedCard extends Base {
         : c.blink_tip && dir && on > 0 ? Math.min(c.segments - 1, on - 1) : -1;
       segs.forEach((s, i) => {
         // Segmente behalten immer ihre Stufenfarbe; die Richtung sagt der Wert und der Pfeil
-        const col = lvl === null ? color : this._segColors?.[i] ?? color;
+        const col = i < reserveOn
+          ? reserveCol
+          : lvl === null ? color : this._segColors?.[i] ?? color;
         const lit = i < on || i === pulse || i === peakAt;
         s.style.background = lit ? col : off;
         s.style.boxShadow = lit ? `0 0 5px ${col}` : "none";
@@ -933,6 +961,7 @@ const LABELS = {
     pulse_width: "Pulse: width (segments dark at once)",
     blink_tip: "Also blink the tip",
     blink_cycles: "Blinks per round (fill + blink)",
+    reserve: "Reserve: % or entity (e.g. 10 or sensor.lg_reserve)",
     peak: "Peak-hold mark",
     peak_hold: "Hold peak (s)",
     color_state: "Value in direction color",
@@ -972,6 +1001,7 @@ const LABELS = {
     off: "Off (dark segments)",
     body: "Housing (bar background)",
     frame: "Frame & terminal",
+    reserve: "Reserve (unusable part)",
     pos: "Positive direction (charging / rising)",
     neg: "Negative direction (discharging / falling)",
     name: "Display name",
@@ -1009,6 +1039,7 @@ const LABELS = {
     pulse_width: "Puls: Breite (Segmente gleichzeitig aus)",
     blink_tip: "Spitze zusätzlich blinken lassen",
     blink_cycles: "Blinkzahl je Runde (Füllen + Blinken)",
+    reserve: "Reserve: % oder Entität (z. B. 10 oder sensor.lg_reserve)",
     peak: "Peak-Hold-Marke",
     peak_hold: "Peak halten (s)",
     color_state: "Wert in Richtungsfarbe",
@@ -1048,6 +1079,7 @@ const LABELS = {
     off: "Aus (dunkle Segmente)",
     body: "Gehäuse (Hintergrund der Balken)",
     frame: "Rahmen & Pluspol",
+    reserve: "Reserve (nicht nutzbarer Teil)",
     pos: "Richtung positiv (lädt / steigt)",
     neg: "Richtung negativ (entlädt / fällt)",
     name: "Anzeigename",
@@ -1153,6 +1185,7 @@ const itemFields = (generic) =>
           { name: "precision", selector: num(0, 5) },
           { name: "trend_deadband", selector: num(0, 100, 0.1) },
         ] },
+        { name: "reserve", selector: { text: {} } },
       ]
     : [
         { name: "entity", selector: ent({ device_class: "battery" }) },
@@ -1164,6 +1197,7 @@ const itemFields = (generic) =>
         { name: "charge", selector: ent({ domain: "sensor" }) },
         { name: "discharge", selector: ent({ domain: "sensor" }) },
         { name: "deadband", selector: num(0, 10000, 0.1) },
+        { name: "reserve", selector: { text: {} } },
       ];
 
 const BASE_SCHEMA = [{ name: "title", selector: { text: {} } }];
@@ -1211,6 +1245,7 @@ const tailSchema = (generic, lang = "en") => {
       { name: "pulse_width", selector: num(1, 8, 0.5) },
       { name: "blink_tip", selector: { boolean: {} } },
       { name: "blink_cycles", selector: num(1, 10) },
+      { name: "reserve", selector: { text: {} } },
       {
         name: "flow_style",
         selector: {
@@ -1305,6 +1340,7 @@ const COLOR_KEYS = [
   ["off", OFF],
   ["body", BODY],
   ["frame", FRAME],
+  ["reserve", RESERVE],
   ["pos", FLOW_DEFAULT.charging],
   ["neg", FLOW_DEFAULT.discharging],
 ];

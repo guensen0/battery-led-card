@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.7.0** — neue Animation `fill_blink`: Füllen und Blinken laufen nacheinander
+**v4.8.0** — Reserve je Batterie, in eigener Farbe dargestellt
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -94,6 +94,7 @@ entities:
 | `pulse_period` | 1–60 s | `3` | Zeit von einem Durchlauf zum nächsten — der **Abstand**. Ändert das Tempo nicht; was über `pulse_travel` hinausgeht, ist Standzeit. Kleiner als `pulse_travel` lassen die Durchläufe überlappen |
 | `pulse_width` | 1–8 | `2` | Wie viele Segmente gleichzeitig aus sind — die Breite des wandernden Lochs |
 | `blink_cycles` | 1–10 | `3` | Blinkzahl je Runde, nur für `animation: fill_blink` |
+| `reserve` | Zahl \| Entität | – | Anteil des Balkens, der nicht nutzbar ist (Reserve / minimaler Ladestand). Entweder eine Zahl oder eine Entität, die sie liefert; ein `%` im Zustand wird ignoriert. Auch je Zeile setzbar, dort schlägt sie den Kartenwert |
 | `blink_tip` | bool | `false` | Lässt die Spitze zusätzlich zur gewählten Animation blinken, sobald eine Richtung erkannt ist. Bei `fill` und `pulse` kombinierbar, bei `blink` schon enthalten |
 | `animation` | `none` \| `blink` \| `blink_always` \| `pulse` \| `fill` \| `fill_blink` | `none` | `blink`: das letzte leuchtende Segment blinkt, sobald ein Lade-/Entladefluss erkannt ist — in beide Richtungen dasselbe, in der Stufenfarbe des Balkens. `blink_always`: blinkt immer, in der Stufenfarbe, ohne Richtungsaussage. `pulse`: ein dunkles Segment wandert über den leuchtenden Teil, beim Laden nach rechts, beim Entladen nach links; Tempo und Wiederholrate über `pulse_travel`, `pulse_period` und `pulse_width`. Nahe am Verhalten vor 4.2.0 liegt
 `pulse_travel: 3`, `pulse_period: 3`, `pulse_width: 3` — durchgehende Welle ohne Pause. `fill`: die Segmente bis zum Stand leuchten gedimmt und werden der Reihe nach voll hell — beim Laden von 0 nach oben, beim Entladen wird dieselbe Bewegung rückwärts abgespielt, oben geht zuerst aus. Der Füllstand bleibt dabei jederzeit ablesbar, weil nichts ganz ausgeht. Gefüllt wird in `pulse_travel`, danach steht der Balken bis `pulse_period` um ist. Blinken und Pfeil folgen dagegen der Leistung (1,8 s bei ~0 bis 0,35 s ab `flow_full_scale`; ohne messbare Leistung 1,1 s) `fill_blink`: wie `fill`, aber Füllen und Blinken laufen **nacheinander** statt gleichzeitig — beim Laden füllt sich der Balken, danach blinkt die Spitze `blink_cycles` mal; Entladen ist dieselbe Runde rückwärts, also blinkt erst die Spitze und dann gehen die LEDs von der Spitze nach unten aus. |
@@ -147,6 +148,7 @@ würde Dauerflattern den Umbau endlos verschieben. `0` = sofort.
 | `name` | Anzeigename statt `friendly_name` / Entity-ID |
 | `icon` | Symbol statt dem der Entität, z. B. `mdi:home-battery` |
 | `precision` | Nachkommastellen nur für diese Zeile |
+| `reserve` | Reserve dieser Zeile — Zahl oder die Entität, die sie liefert |
 | `charging` | `binary_sensor`, `on` = lädt |
 | `power` | ein vorzeichenbehafteter Sensor: `+` lädt, `−` entlädt |
 | `charge` + `discharge` | zwei getrennte Leistungssensoren, der größere gewinnt |
@@ -211,6 +213,7 @@ die schlagen sowohl `surface` als auch `preset`.
 | `off` | – | unbeleuchtete Segmente — per Default aus dem Theme gemischt |
 | `body` | – | Gehäuse hinter den Segmenten — per Default aus dem Theme gemischt |
 | `frame` | – | Rahmen und Pluspol, Default `var(--divider-color)` |
+| `reserve` | – | Segmente unterhalb der Reserve — vorhanden, aber nicht nutzbar |
 | `pos` | – | Richtung positiv (lädt / steigt), Default `var(--success-color)` — färbt Pfeil und Wert, nicht die Segmente |
 | `neg` | – | Richtung negativ (entlädt / fällt), Default `var(--error-color)`, also rot |
 
