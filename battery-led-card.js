@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.11.0";
+export const VERSION = "4.11.1";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -149,6 +149,14 @@ export const fillKeyframes = (name, segments, dim = 0.3, span = 1) =>
       ${(Number(at) + 0.1).toFixed(1)}%, 100% { opacity: 1; }
     }`;
   }).join("\n");
+
+/**
+ * blink_tip ergänzt nur die Betriebsarten, die die Spitze nicht ohnehin blinken lassen.
+ * Bei "none" wäre es dasselbe wie "blink", bei "blink"/"blink_always" doppelt — und "aus"
+ * soll aus bedeuten.
+ */
+export const tipBlinks = (animation, blinkTip) =>
+  !!blinkTip && ["pulse", "fill", "fill_blink"].includes(animation);
 
 /**
  * Das pulsierende Segment ist immer das letzte leuchtende — in beide Richtungen.
@@ -814,7 +822,9 @@ export class BatteryLedCard extends Base {
       // zusätzlich zur gewählten Animation die Spitze blinken lassen
       const blinkAt = pulse >= 0
         ? pulse
-        : c.blink_tip && dir && on > 0 ? Math.min(c.segments - 1, on - 1) : -1;
+        : tipBlinks(c.animation, c.blink_tip) && dir && on > 0
+          ? Math.min(c.segments - 1, on - 1)
+          : -1;
       segs.forEach((s, i) => {
         // Segmente behalten immer ihre Stufenfarbe; die Richtung sagt der Wert und der Pfeil
         // Reserveteil in eigener Farbe; darüber die Stufenfarbe. Bei color_mode "segment"
@@ -992,7 +1002,7 @@ const LABELS = {
     pulse_travel: "Pulse: duration of one pass (s)",
     pulse_period: "Pulse: gap between passes (s)",
     pulse_width: "Pulse: width (segments dark at once)",
-    blink_tip: "Also blink the tip",
+    blink_tip: "Also blink the tip (with pulse and fill)",
     blink_cycles: "Blinks per round (fill + blink)",
     reserve: "Reserve: % or entity (e.g. 10 or sensor.lg_reserve)",
     invert: "Flip the flow direction (sensor counts the other way round)",
@@ -1072,7 +1082,7 @@ const LABELS = {
     pulse_travel: "Puls: Dauer eines Durchlaufs (s)",
     pulse_period: "Puls: Abstand zwischen Durchläufen (s)",
     pulse_width: "Puls: Breite (Segmente gleichzeitig aus)",
-    blink_tip: "Spitze zusätzlich blinken lassen",
+    blink_tip: "Spitze zusätzlich blinken lassen (bei Puls und Füllen)",
     blink_cycles: "Blinkzahl je Runde (Füllen + Blinken)",
     reserve: "Reserve: % oder Entität (z. B. 10 oder sensor.lg_reserve)",
     invert: "Flussrichtung umdrehen (Sensor zählt andersherum)",
