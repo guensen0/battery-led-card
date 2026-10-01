@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.10.0** — Reserve je Batterie, dazu `invert` für Sensoren mit umgekehrtem Vorzeichen
+**v4.11.0** — die Warnung zeigt sich am Balken, die Farbe des Werts gehört dem Ladefluss
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -108,7 +108,7 @@ entities:
 | `surface` | `classic` \| `glass` \| `flat` | `classic` | Gehäuse, unbeleuchtete Segmente und Rahmen |
 | `color_state` | bool | `true` | Wert rechts in der Richtungsfarbe, sobald ein Fluss erkannt ist |
 | `color_mode` | `level` \| `segment` | `level` | `level`: der ganze Balken trägt die Farbe der aktuellen Stufe. `segment`: jedes Segment hat seine eigene Farbe nach der Schwelle, die es abdeckt — die Rampe läuft dann von links nach rechts durch |
-| `warn_below` | 0–100 | `0` | Unter diesem Stand blinkt der Balken, `0` = aus |
+| `warn_below` | 0–100 | `0` | Unter diesem Stand pulsiert der Balken und der Wert wird fett gesetzt, `0` = aus. Die **Farbe** des Werts bleibt dem Ladefluss vorbehalten, damit sich beide nicht widersprechen |
 | `show_last_changed` | bool | `false` | „vor 3 Stunden" neben dem Namen — entlarvt tote Sensoren |
 | `deadband` | number | `1` | Ladefluss-Schwelle (Standard für alle Zeilen), in der Einheit der Leistungssensoren |
 | `auto` | bool | `false` | Alle `device_class: battery`-Entitäten einsammeln |

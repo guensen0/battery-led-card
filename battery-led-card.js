@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.10.0";
+export const VERSION = "4.11.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -420,7 +420,9 @@ const CSS = `
   /* Die Keyframes entstehen je Karte in _build — ihre Breite hängt von Tempo, Periode
      und Segmentzahl ab und lässt sich nicht statisch hinschreiben. */
   .row.warn .body { animation: bl-pulse 1.6s ease-in-out infinite; }
-  .row.warn .pct { color: var(--error-color, #e53522); opacity: 1; font-weight: 600; }
+  /* Die Warnung zeigt sich am pulsierenden Balken. Die Farbe des Werts bleibt dem Ladefluss
+     vorbehalten, sonst stünden an derselben Stelle zwei Aussagen. */
+  .row.warn .pct { font-weight: 600; }
   @keyframes bl-pulse { 50% { opacity: .35; } }
   .tools { display: flex; align-items: center; gap: 12px; padding: 10px 2px 4px; }
   .tools button { padding: 8px 14px; border-radius: 6px; cursor: pointer; font: inherit;

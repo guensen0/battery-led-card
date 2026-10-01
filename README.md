@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.10.0** — reserve per battery, and `invert` for sensors that count the other way round
+**v4.11.0** — warning shows on the bar, the value's color belongs to the flow
 
 Two Lovelace cards, one file, one resource:
 
