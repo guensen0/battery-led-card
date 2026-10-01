@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.9.0** — Reserve je Batterie, in eigener Farbe und wahlweise als Nullpunkt der Schwellen
+**v4.10.0** — Reserve je Batterie, dazu `invert` für Sensoren mit umgekehrtem Vorzeichen
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -150,6 +150,7 @@ würde Dauerflattern den Umbau endlos verschieben. `0` = sofort.
 | `icon` | Symbol statt dem der Entität, z. B. `mdi:home-battery` |
 | `precision` | Nachkommastellen nur für diese Zeile |
 | `reserve` | Reserve dieser Zeile — Zahl oder die Entität, die sie liefert |
+| `invert` | Dreht die erkannte Richtung um, für Sensoren mit umgekehrtem Vorzeichen (`..._inverted`) |
 | `charging` | `binary_sensor`, `on` = lädt |
 | `power` | ein vorzeichenbehafteter Sensor: `+` lädt, `−` entlädt |
 | `charge` + `discharge` | zwei getrennte Leistungssensoren, der größere gewinnt |

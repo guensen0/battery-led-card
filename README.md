@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.9.0** — reserve per battery, in its own color and optionally as the zero point for the thresholds
+**v4.10.0** — reserve per battery, and `invert` for sensors that count the other way round
 
 Two Lovelace cards, one file, one resource:
 
@@ -148,6 +148,7 @@ flapping would postpone the rebuild forever. `0` = immediately.
 | `icon` | icon instead of the entity's own, e.g. `mdi:home-battery` |
 | `precision` | decimal places for this row only |
 | `reserve` | reserve for this row — a number or the entity that provides it |
+| `invert` | flips the detected direction, for sensors that count the other way round (`..._inverted`) |
 | `charging` | `binary_sensor`, `on` = charging |
 | `power` | a signed sensor: `+` charging, `−` discharging |
 | `charge` + `discharge` | two separate power sensors, the larger one wins |

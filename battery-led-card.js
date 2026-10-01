@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.9.0";
+export const VERSION = "4.10.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -270,22 +270,29 @@ export const chargeFlow = (item, states = {}, deadband = 1) => {
     const v = Number(states[id]?.state);
     return Number.isFinite(v) ? v : null;
   };
+  // `invert` dreht die Vorzeichenkonvention um — manche Integrationen liefern die
+  // Batterieleistung andersherum (+ beim Entladen), erkennbar an Namen wie "..._inverted".
+  const flip = (r) => (item.invert && r.dir
+    ? { ...r, dir: r.dir === "charging" ? "discharging" : "charging" }
+    : r);
   const none = { dir: null, rate: null };
   if (item.charging) {
-    return states[item.charging]?.state === "on" ? { dir: "charging", rate: null } : none;
+    return flip(
+      states[item.charging]?.state === "on" ? { dir: "charging", rate: null } : none,
+    );
   }
   if (item.power) {
     const v = num(item.power);
     if (v === null) return none;
-    if (v > deadband) return { dir: "charging", rate: v };
-    if (v < -deadband) return { dir: "discharging", rate: -v };
+    if (v > deadband) return flip({ dir: "charging", rate: v });
+    if (v < -deadband) return flip({ dir: "discharging", rate: -v });
     return { dir: null, rate: Math.abs(v) };
   }
   if (item.charge || item.discharge) {
     const c = Math.abs(num(item.charge) ?? 0);
     const d = Math.abs(num(item.discharge) ?? 0);
     if (c <= deadband && d <= deadband) return { dir: null, rate: Math.max(c, d) };
-    return c >= d ? { dir: "charging", rate: c } : { dir: "discharging", rate: d };
+    return flip(c >= d ? { dir: "charging", rate: c } : { dir: "discharging", rate: d });
   }
   return none;
 };
@@ -986,6 +993,7 @@ const LABELS = {
     blink_tip: "Also blink the tip",
     blink_cycles: "Blinks per round (fill + blink)",
     reserve: "Reserve: % or entity (e.g. 10 or sensor.lg_reserve)",
+    invert: "Flip the flow direction (sensor counts the other way round)",
     levels_above_reserve: "Measure thresholds above the reserve",
     peak: "Peak-hold mark",
     peak_hold: "Hold peak (s)",
@@ -1065,6 +1073,7 @@ const LABELS = {
     blink_tip: "Spitze zusätzlich blinken lassen",
     blink_cycles: "Blinkzahl je Runde (Füllen + Blinken)",
     reserve: "Reserve: % oder Entität (z. B. 10 oder sensor.lg_reserve)",
+    invert: "Flussrichtung umdrehen (Sensor zählt andersherum)",
     levels_above_reserve: "Schwellen am nutzbaren Teil messen",
     peak: "Peak-Hold-Marke",
     peak_hold: "Peak halten (s)",
@@ -1224,6 +1233,7 @@ const itemFields = (generic) =>
         { name: "discharge", selector: ent({ domain: "sensor" }) },
         { name: "deadband", selector: num(0, 10000, 0.1) },
         { name: "reserve", selector: { text: {} } },
+        { name: "invert", selector: { boolean: {} } },
       ];
 
 const BASE_SCHEMA = [{ name: "title", selector: { text: {} } }];
