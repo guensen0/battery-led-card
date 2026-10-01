@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.8.0** — reserve per battery, drawn in its own color
+**v4.9.0** — reserve per battery, in its own color and optionally as the zero point for the thresholds
 
 Two Lovelace cards, one file, one resource:
 
@@ -94,6 +94,7 @@ entities:
 | `pulse_width` | 1–8 | `2` | how many segments are dark at once — the width of the travelling gap |
 | `blink_cycles` | 1–10 | `3` | number of blinks per round, for `animation: fill_blink` only |
 | `reserve` | number \| entity | – | Share of the bar that is not usable (battery reserve / minimum SoC). Either a plain number or an entity that provides it; a `%` in the entity state is ignored. Also settable per row, where it overrides the card value |
+| `levels_above_reserve` | bool | `false` | Measures thresholds and `warn_below` against the usable part instead of the whole bar: with `reserve: 20`, a level of 20 counts as empty and 100 stays full. Without it a battery with a high reserve never reaches the lower thresholds — at `reserve: 20` the bar still shows a fifth when the battery is effectively empty. With `color_mode: segment` the ramp moves into the usable part as well |
 | `blink_tip` | bool | `false` | makes the tip blink in addition to the chosen animation, as soon as a direction is detected. Combinable with `fill` and `pulse`; already included in `blink` |
 | `animation` | `none` \| `blink` \| `blink_always` \| `pulse` \| `fill` \| `fill_blink` | `none` | `blink`: the last lit segment blinks as soon as a charge/discharge flow is detected — same in both directions, in the bar's level color. `blink_always`: always blinks, in the level color, without indicating direction. `pulse`: a dark segment travels across the lit part, right while charging, left while discharging; speed and repeat rate via `pulse_travel`, `pulse_period` and `pulse_width`. Close to the pre-4.2.0 behavior:
 `pulse_travel: 3`, `pulse_period: 3`, `pulse_width: 3` — a continuous wave with no pause. `fill`: the segments up to the level light up dimmed and turn fully bright one by one — upward from 0 while charging, the same motion reversed while discharging, with the top going dark first. The level stays readable at all times because nothing ever goes fully dark. Filling happens over `pulse_travel`, then the bar holds until `pulse_period` is up. Blinking and the arrow, on the other hand, follow the actual power (1.8 s near 0 down to 0.35 s at `flow_full_scale`; 1.1 s without a measurable power value) `fill_blink`: same as `fill`, but filling and blinking run **one after the other** instead of at the same time — while charging the bar fills up and the tip then blinks `blink_cycles` times; discharging is the same round played backwards, so the tip blinks first and the LEDs go out from the tip downward. |

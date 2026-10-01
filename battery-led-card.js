@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.8.0";
+export const VERSION = "4.9.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -201,6 +201,16 @@ export const reserveLevel = (raw, states = {}) => {
   if (!st) return null;            // unbekannte Entität ist keine Reserve von 0
   const v = Number(st);
   return Number.isFinite(v) ? v : null;
+};
+
+/**
+ * Stand bezogen auf den nutzbaren Teil: bei Reserve 20 ist ein SoC von 20 eine Null und
+ * 100 bleibt 100. Ohne Reserve unverändert. Sonst erreicht eine Batterie mit hoher Reserve
+ * die unteren Schwellen nie — bei Reserve 20 ist bei "leer" immer noch ein Fünftel Balken da.
+ */
+export const aboveReserve = (v, reserve) => {
+  if (v === null || !reserve || reserve <= 0 || reserve >= 100) return v;
+  return ((v - reserve) / (100 - reserve)) * 100;
 };
 
 /**
@@ -442,6 +452,7 @@ export const DEFAULTS = {
   blink_tip: false,
   blink_cycles: 3,
   reserve: "",
+  levels_above_reserve: false,
   peak: false,
   peak_hold: 60,
   color_state: true,
@@ -723,6 +734,19 @@ export class BatteryLedCard extends Base {
       // davon ist, ob ein Pfeil angezeigt wird.
       const flow = this._flow(item, lvl, c);
       const dir = flow.dir;
+      // Reserve: der untere Teil des Balkens, der nicht nutzbar ist
+      const resRaw = reserveLevel(item.reserve ?? c.reserve, this._hass.states);
+      const resPct = resRaw === null
+        ? null
+        : this._generic
+          ? scaleValue({ state: resRaw, attributes: {} }, item, c)
+          : resRaw;
+      const reserveOn = resPct === null ? 0 : filledSegments(resPct, c.segments);
+      const reserveCol = toCss(c.colors.reserve ?? RESERVE);
+      // Schwellen und Warnung wahlweise am nutzbaren Teil messen statt am ganzen Balken
+      const res4lvl = c.levels_above_reserve ? resPct : null;
+      const lvlForColor = aboveReserve(lvl, res4lvl);
+
       if (icon) {
         // ha-state-icon kennt die Zustandslogik (Batteriestand, device_class) schon
         icon.hass = this._hass;
@@ -731,7 +755,9 @@ export class BatteryLedCard extends Base {
       }
       if (name) name.textContent = item.name ?? st?.attributes?.friendly_name ?? item.entity;
       row.classList.toggle("dead", lvl === null);
-      row.classList.toggle("warn", lvl !== null && c.warn_below > 0 && lvl < c.warn_below);
+      row.classList.toggle(
+        "warn", lvl !== null && c.warn_below > 0 && lvlForColor < c.warn_below,
+      );
       if (pct) {
         // Platzsparmodus: die Wertespalte zeigt abwechselnd Wert und Richtung
         const swap = c.show_flow && c.flow_style === "alternate" && dir && this._altPhase;
@@ -753,7 +779,7 @@ export class BatteryLedCard extends Base {
 
       const color = lvl === null
         ? "var(--disabled-text-color, #555)"
-        : levelColor(lvl, c.colors, c.thresholds);
+        : levelColor(lvlForColor, c.colors, c.thresholds);
       const on = lvl === null ? 0 : filledSegments(lvl, c.segments);
       // Peak-Hold: Marke oberhalb des Balkens, die dem Höchstwert nachläuft
       let peakAt = -1;
@@ -769,16 +795,6 @@ export class BatteryLedCard extends Base {
         ? 1.1
         : flowDuration(flow.rate.value,
             flow.rate.trend ? c.trend_full_scale : c.flow_full_scale, 1.8, 0.35);
-      // Reserve: der untere Teil des Balkens, der nicht nutzbar ist
-      const resRaw = reserveLevel(item.reserve ?? c.reserve, this._hass.states);
-      const resPct = resRaw === null
-        ? null
-        : this._generic
-          ? scaleValue({ state: resRaw, attributes: {} }, item, c)
-          : resRaw;
-      const reserveOn = resPct === null ? 0 : filledSegments(resPct, c.segments);
-      const reserveCol = toCss(c.colors.reserve ?? RESERVE);
-
       const pulse = pulseIndex(c.animation, dir, on, c.segments);
       const wave = c.animation === "pulse" && dir && on > 0;
       const fill = (c.animation === "fill" || c.animation === "fill_blink") && dir && on > 0;
@@ -792,9 +808,17 @@ export class BatteryLedCard extends Base {
         : c.blink_tip && dir && on > 0 ? Math.min(c.segments - 1, on - 1) : -1;
       segs.forEach((s, i) => {
         // Segmente behalten immer ihre Stufenfarbe; die Richtung sagt der Wert und der Pfeil
-        const col = i < reserveOn
-          ? reserveCol
-          : lvl === null ? color : this._segColors?.[i] ?? color;
+        // Reserveteil in eigener Farbe; darüber die Stufenfarbe. Bei color_mode "segment"
+        // und Schwellen über der Reserve rutscht die Rampe in den nutzbaren Teil.
+        let col = color;
+        if (i < reserveOn) col = reserveCol;
+        else if (lvl !== null && this._segColors) {
+          col = res4lvl
+            ? segmentColor(
+                i - reserveOn, Math.max(1, c.segments - reserveOn), c.colors, c.thresholds,
+              )
+            : this._segColors[i];
+        }
         const lit = i < on || i === pulse || i === peakAt;
         s.style.background = lit ? col : off;
         s.style.boxShadow = lit ? `0 0 5px ${col}` : "none";
@@ -962,6 +986,7 @@ const LABELS = {
     blink_tip: "Also blink the tip",
     blink_cycles: "Blinks per round (fill + blink)",
     reserve: "Reserve: % or entity (e.g. 10 or sensor.lg_reserve)",
+    levels_above_reserve: "Measure thresholds above the reserve",
     peak: "Peak-hold mark",
     peak_hold: "Hold peak (s)",
     color_state: "Value in direction color",
@@ -1040,6 +1065,7 @@ const LABELS = {
     blink_tip: "Spitze zusätzlich blinken lassen",
     blink_cycles: "Blinkzahl je Runde (Füllen + Blinken)",
     reserve: "Reserve: % oder Entität (z. B. 10 oder sensor.lg_reserve)",
+    levels_above_reserve: "Schwellen am nutzbaren Teil messen",
     peak: "Peak-Hold-Marke",
     peak_hold: "Peak halten (s)",
     color_state: "Wert in Richtungsfarbe",

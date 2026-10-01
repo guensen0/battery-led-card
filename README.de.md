@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.8.0** — Reserve je Batterie, in eigener Farbe dargestellt
+**v4.9.0** — Reserve je Batterie, in eigener Farbe und wahlweise als Nullpunkt der Schwellen
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -95,6 +95,7 @@ entities:
 | `pulse_width` | 1–8 | `2` | Wie viele Segmente gleichzeitig aus sind — die Breite des wandernden Lochs |
 | `blink_cycles` | 1–10 | `3` | Blinkzahl je Runde, nur für `animation: fill_blink` |
 | `reserve` | Zahl \| Entität | – | Anteil des Balkens, der nicht nutzbar ist (Reserve / minimaler Ladestand). Entweder eine Zahl oder eine Entität, die sie liefert; ein `%` im Zustand wird ignoriert. Auch je Zeile setzbar, dort schlägt sie den Kartenwert |
+| `levels_above_reserve` | bool | `false` | Misst Schwellen und `warn_below` am nutzbaren Teil statt am ganzen Balken: bei `reserve: 20` zählt ein Stand von 20 als leer, 100 bleibt voll. Ohne das erreicht eine Batterie mit hoher Reserve die unteren Schwellen nie — bei `reserve: 20` steht der Balken bei effektiv leer immer noch auf einem Fünftel. Bei `color_mode: segment` rutscht auch die Rampe in den nutzbaren Teil |
 | `blink_tip` | bool | `false` | Lässt die Spitze zusätzlich zur gewählten Animation blinken, sobald eine Richtung erkannt ist. Bei `fill` und `pulse` kombinierbar, bei `blink` schon enthalten |
 | `animation` | `none` \| `blink` \| `blink_always` \| `pulse` \| `fill` \| `fill_blink` | `none` | `blink`: das letzte leuchtende Segment blinkt, sobald ein Lade-/Entladefluss erkannt ist — in beide Richtungen dasselbe, in der Stufenfarbe des Balkens. `blink_always`: blinkt immer, in der Stufenfarbe, ohne Richtungsaussage. `pulse`: ein dunkles Segment wandert über den leuchtenden Teil, beim Laden nach rechts, beim Entladen nach links; Tempo und Wiederholrate über `pulse_travel`, `pulse_period` und `pulse_width`. Nahe am Verhalten vor 4.2.0 liegt
 `pulse_travel: 3`, `pulse_period: 3`, `pulse_width: 3` — durchgehende Welle ohne Pause. `fill`: die Segmente bis zum Stand leuchten gedimmt und werden der Reihe nach voll hell — beim Laden von 0 nach oben, beim Entladen wird dieselbe Bewegung rückwärts abgespielt, oben geht zuerst aus. Der Füllstand bleibt dabei jederzeit ablesbar, weil nichts ganz ausgeht. Gefüllt wird in `pulse_travel`, danach steht der Balken bis `pulse_period` um ist. Blinken und Pfeil folgen dagegen der Leistung (1,8 s bei ~0 bis 0,35 s ab `flow_full_scale`; ohne messbare Leistung 1,1 s) `fill_blink`: wie `fill`, aber Füllen und Blinken laufen **nacheinander** statt gleichzeitig — beim Laden füllt sich der Balken, danach blinkt die Spitze `blink_cycles` mal; Entladen ist dieselbe Runde rückwärts, also blinkt erst die Spitze und dann gehen die LEDs von der Spitze nach unten aus. |
