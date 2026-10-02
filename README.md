@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.11.2** — `fill` now starts from a truly empty bar
+**v4.12.0** — the entity picker no longer insists on `device_class: battery`
 
 Two Lovelace cards, one file, one resource:
 
@@ -126,7 +126,7 @@ charge-flow sensors and charge-flow threshold — all in one place. At the botto
 **＋ Add entity** block; as soon as an entity is chosen there, it moves into the list and a new
 empty block appears. Remove a row by clearing its entity field.
 
-The **Collect batteries** button appends every `device_class: battery` entity not already
+The picker offers every entity that can carry a number (`sensor`, `binary_sensor`, `number`, `input_number`, `counter`), not just those with `device_class: battery` — plenty of storage systems do not set it. The **Collect batteries** button appends every `device_class: battery` entity not already
 listed, in one go.
 
 To keep the list maintained *continuously* and automatically instead, set `auto: true` by hand

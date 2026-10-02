@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.11.2** — `fill` beginnt jetzt mit einem wirklich leeren Balken
+**v4.12.0** — die Entitätsauswahl besteht nicht mehr auf `device_class: battery`
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -128,7 +128,7 @@ steht ein leerer Block **＋ Entität hinzufügen**; sobald dort eine Entität g
 sie in die Liste und ein neuer leerer Block erscheint. Eine Zeile entfernt man, indem man ihr
 Entitätsfeld leert.
 
-Der Knopf **Batterien einsammeln** hängt alle noch nicht gelisteten
+Die Auswahl bietet jede Entität an, die eine Zahl tragen kann (`sensor`, `binary_sensor`, `number`, `input_number`, `counter`), nicht nur solche mit `device_class: battery` — viele Speicher setzen die nämlich nicht. Der Knopf **Batterien einsammeln** hängt alle noch nicht gelisteten
 `device_class: battery`-Entitäten auf einen Schlag an.
 
 Wer die Liste stattdessen *laufend* automatisch pflegen lassen will, setzt `auto: true` von

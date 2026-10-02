@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.11.2";
+export const VERSION = "4.12.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -1218,12 +1218,19 @@ const OPTION_LABELS = {
 const num = (min, max, step = 1) => ({ number: { min, max, step, mode: "box" } });
 const ent = (filter) => ({ entity: filter ? { filter } : {} });
 
+// Domänen, die überhaupt einen Zahlenwert liefern können. Der Picker filterte vorher auf
+// device_class: battery — viele Speicher setzen die aber nicht, die waren dann nur per YAML
+// erreichbar. Ohne Filter stünden dafür Automatisierungen und Skripte mit in der Liste.
+const VALUE_DOMAINS = [{
+  domain: ["sensor", "binary_sensor", "number", "input_number", "counter"],
+}];
+
 // Ladefluss-Sensoren gibt es nur bei Batterien (Hausspeicher); die Gauge-Karte leitet ihren
 // Pfeil aus dem Verlauf des Werts ab und braucht die Felder nicht.
 const itemFields = (generic) =>
   generic
     ? [
-        { name: "entity", selector: ent() },
+        { name: "entity", selector: ent(VALUE_DOMAINS) },
         { name: "name", selector: { text: {} } },
         { name: "icon", selector: { icon: {} } },
         { type: "grid", schema: [
@@ -1235,7 +1242,7 @@ const itemFields = (generic) =>
         { name: "reserve", selector: { text: {} } },
       ]
     : [
-        { name: "entity", selector: ent({ device_class: "battery" }) },
+        { name: "entity", selector: ent(VALUE_DOMAINS) },
         { name: "name", selector: { text: {} } },
         { name: "icon", selector: { icon: {} } },
         { name: "precision", selector: num(0, 5) },
