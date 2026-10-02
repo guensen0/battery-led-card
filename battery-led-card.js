@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.14.3";
+export const VERSION = "4.15.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -157,6 +157,20 @@ export const fillKeyframes = (name, segments, dim = 0.3, span = 1) =>
  */
 export const tipBlinks = (animation, blinkTip) =>
   !!blinkTip && ["pulse", "fill", "fill_blink"].includes(animation);
+
+/**
+ * Schlüssel in lesbarer Reihenfolge: `type` oben, `entities` unten, der Rest dazwischen.
+ * Der Editor baut die Config aus dem Formular neu auf, und ohne das landet `type` irgendwo
+ * in der Mitte zwischen den Einstellungen.
+ */
+export const orderConfig = (config = {}) => {
+  const { type, entities, ...rest } = config;
+  return {
+    ...(type === undefined ? {} : { type }),
+    ...rest,
+    ...(entities === undefined ? {} : { entities }),
+  };
+};
 
 /**
  * Im Wechselmodus teilen sich Wert und Pfeil eine Spalte. Fällt die Ausmessung in die
@@ -1613,9 +1627,12 @@ class BatteryLedCardEditor extends Base {
   _emit(config) {
     if (!config.title) delete config.title;
     if (!Object.keys(config.colors ?? {}).length) delete config.colors;
-    this._config = config;
+    const ordered = orderConfig(config);
+    this._config = ordered;
     this.dispatchEvent(
-      new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }),
+      new CustomEvent("config-changed", {
+        detail: { config: ordered }, bubbles: true, composed: true,
+      }),
     );
   }
 }

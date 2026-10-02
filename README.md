@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.14.3** — `state_width: auto` no longer measures the arrow in `flow_style: alternate`
+**v4.15.0** — the editor writes `type` at the top and `entities` at the bottom
 
 Two Lovelace cards, one file, one resource:
 

@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.14.3** — `state_width: auto` misst bei `flow_style: alternate` nicht mehr den Pfeil
+**v4.15.0** — der Editor schreibt `type` nach oben und `entities` nach unten
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
