@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.14.0** — `min`/`max` work on the battery card too, for entities that are not 0–100
+**v4.14.1** — scaling non-battery entities belongs on the gauge card, not the battery card
 
 Two Lovelace cards, one file, one resource:
 
@@ -150,7 +150,6 @@ flapping would postpone the rebuild forever. `0` = immediately.
 | `precision` | decimal places for this row only |
 | `reserve` | reserve for this row — a number or the entity that provides it |
 | `unit` | unit for this row only |
-| `min` / `max` | the range this row's value spans; set them for entities that are not 0–100 |
 | `invert` | flips the detected direction, for sensors that count the other way round (`..._inverted`) |
 | `charging` | `binary_sensor`, `on` = charging |
 | `power` | a signed sensor: `+` charging, `−` discharging |

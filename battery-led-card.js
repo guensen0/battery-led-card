@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.14.0";
+export const VERSION = "4.14.1";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -195,18 +195,6 @@ export const batteryLevel = (st) => {
   if (st.state === "on") return 0;   // binary_sensor battery: on == leer
   if (st.state === "off") return 100;
   return null;
-};
-
-/**
- * Wert einer Zeile in Prozent. Auf der Batteriekarte ist das normalerweise der Ladestand
- * selbst (inklusive binary_sensor und battery_level-Attribut). Sobald dort aber min/max
- * gesetzt sind — seit die Auswahl auch Nicht-Batterien zulässt — wird wie auf der Gauge
- * Card skaliert.
- */
-export const levelOf = (st, item = {}, card = {}, generic = false) => {
-  const min = item.min ?? card.min ?? 0;
-  const max = item.max ?? card.max ?? 100;
-  return generic || min !== 0 || max !== 100 ? scaleValue(st, item, card) : batteryLevel(st);
 };
 
 /**
@@ -762,7 +750,11 @@ export class BatteryLedCard extends Base {
     const locale = this._hass.locale?.language ?? "de";
     const data = this._rows.map((r) => {
       const st = this._hass.states[r.item.entity];
-      return { ...r, st, lvl: levelOf(st, r.item, c, this._generic) };
+      return {
+        ...r,
+        st,
+        lvl: this._generic ? scaleValue(st, r.item, c) : batteryLevel(st),
+      };
     });
     if (c.sort) {
       data.sort((a, b) => (a.lvl ?? 999) - (b.lvl ?? 999));
@@ -1273,11 +1265,7 @@ const itemFields = (generic) =>
         { name: "entity", selector: ent(VALUE_DOMAINS) },
         { name: "name", selector: { text: {} } },
         { name: "icon", selector: { icon: {} } },
-        { type: "grid", schema: [
-          { name: "min", selector: num(-1000000, 1000000, 0.01) },
-          { name: "max", selector: num(-1000000, 1000000, 0.01) },
-          { name: "precision", selector: num(0, 5) },
-        ] },
+        { name: "precision", selector: num(0, 5) },
         { name: "charging", selector: ent({ domain: "binary_sensor" }) },
         { name: "power", selector: ent({ domain: "sensor" }) },
         { name: "charge", selector: ent({ domain: "sensor" }) },
