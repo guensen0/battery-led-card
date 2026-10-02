@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.13.0** — die Einheit ist frei wählbar statt immer `%`
+**v4.14.0** — `min`/`max` wirken auch auf der Batteriekarte, für Entitäten außerhalb 0–100
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -152,6 +152,7 @@ würde Dauerflattern den Umbau endlos verschieben. `0` = sofort.
 | `precision` | Nachkommastellen nur für diese Zeile |
 | `reserve` | Reserve dieser Zeile — Zahl oder die Entität, die sie liefert |
 | `unit` | Einheit nur für diese Zeile |
+| `min` / `max` | Bereich, den der Wert dieser Zeile umspannt; nötig für Entitäten außerhalb 0–100 |
 | `invert` | Dreht die erkannte Richtung um, für Sensoren mit umgekehrtem Vorzeichen (`..._inverted`) |
 | `charging` | `binary_sensor`, `on` = lädt |
 | `power` | ein vorzeichenbehafteter Sensor: `+` lädt, `−` entlädt |
