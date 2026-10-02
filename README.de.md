@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.14.2** — im Editor der Gauge Card heißt es "Wert", wo nicht Prozent gemeint ist
+**v4.14.3** — `state_width: auto` misst bei `flow_style: alternate` nicht mehr den Pfeil
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 

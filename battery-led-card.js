@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.14.2";
+export const VERSION = "4.14.3";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -157,6 +157,14 @@ export const fillKeyframes = (name, segments, dim = 0.3, span = 1) =>
  */
 export const tipBlinks = (animation, blinkTip) =>
   !!blinkTip && ["pulse", "fill", "fill_blink"].includes(animation);
+
+/**
+ * Im Wechselmodus teilen sich Wert und Pfeil eine Spalte. Fällt die Ausmessung in die
+ * Pfeilphase, misst sie "▲" statt "100 %" und die Spalte wird zu schmal — in dieser Phase
+ * also nicht messen, der nächste Takt liefert den Wert zurück.
+ */
+export const skipFit = (flowStyle, showFlow, altPhase) =>
+  !!showFlow && flowStyle === "alternate" && !!altPhase;
 
 /**
  * Das pulsierende Segment ist immer das letzte leuchtende — in beide Richtungen.
@@ -943,6 +951,7 @@ export class BatteryLedCard extends Base {
    */
   _fitAuto() {
     const c = this._config;
+    if (skipFit(c.flow_style, c.show_flow, this._altPhase)) return;
     const cols = [];
     if (c.show_name && normWidth(c.name_width) === "auto") cols.push("name");
     if (c.show_state && normWidth(c.state_width, DEFAULT_STATE_WIDTH) === "auto") cols.push("pct");

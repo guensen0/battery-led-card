@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.14.2** — the gauge card's editor says "value" where it does not mean percent
+**v4.14.3** — `state_width: auto` no longer measures the arrow in `flow_style: alternate`
 
 Two Lovelace cards, one file, one resource:
 
