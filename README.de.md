@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.12.0** — die Entitätsauswahl besteht nicht mehr auf `device_class: battery`
+**v4.13.0** — die Einheit ist frei wählbar statt immer `%`
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -94,6 +94,7 @@ entities:
 | `pulse_period` | 1–60 s | `3` | Zeit von einem Durchlauf zum nächsten — der **Abstand**. Ändert das Tempo nicht; was über `pulse_travel` hinausgeht, ist Standzeit. Kleiner als `pulse_travel` lassen die Durchläufe überlappen |
 | `pulse_width` | 1–8 | `2` | Wie viele Segmente gleichzeitig aus sind — die Breite des wandernden Lochs |
 | `blink_cycles` | 1–10 | `3` | Blinkzahl je Runde, nur für `animation: fill_blink` |
+| `unit` | Text | – | Einheit hinter dem Wert. Leer lässt es wie bisher (`%` auf der Batteriekarte, Einheit der Entität auf der Gauge Card), `auto` nimmt immer die Einheit der Entität, `none` lässt sie weg, alles andere wird wörtlich angehängt. Auch je Zeile setzbar |
 | `reserve` | Zahl \| Entität | – | Anteil des Balkens, der nicht nutzbar ist (Reserve / minimaler Ladestand). Entweder eine Zahl oder eine Entität, die sie liefert; ein `%` im Zustand wird ignoriert. Auch je Zeile setzbar, dort schlägt sie den Kartenwert |
 | `levels_above_reserve` | bool | `false` | Misst Schwellen und `warn_below` am nutzbaren Teil statt am ganzen Balken: bei `reserve: 20` zählt ein Stand von 20 als leer, 100 bleibt voll. Ohne das erreicht eine Batterie mit hoher Reserve die unteren Schwellen nie — bei `reserve: 20` steht der Balken bei effektiv leer immer noch auf einem Fünftel. Bei `color_mode: segment` rutscht auch die Rampe in den nutzbaren Teil |
 | `blink_tip` | bool | `false` | Lässt die Spitze zusätzlich zu `pulse`, `fill` und `fill_blink` blinken, sobald eine Richtung erkannt ist. Bei `none` wirkungslos (das wäre schlicht `blink`), bei `blink`/`blink_always` ohnehin enthalten |
@@ -150,6 +151,7 @@ würde Dauerflattern den Umbau endlos verschieben. `0` = sofort.
 | `icon` | Symbol statt dem der Entität, z. B. `mdi:home-battery` |
 | `precision` | Nachkommastellen nur für diese Zeile |
 | `reserve` | Reserve dieser Zeile — Zahl oder die Entität, die sie liefert |
+| `unit` | Einheit nur für diese Zeile |
 | `invert` | Dreht die erkannte Richtung um, für Sensoren mit umgekehrtem Vorzeichen (`..._inverted`) |
 | `charging` | `binary_sensor`, `on` = lädt |
 | `power` | ein vorzeichenbehafteter Sensor: `+` lädt, `−` entlädt |

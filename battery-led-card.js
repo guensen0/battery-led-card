@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.12.0";
+export const VERSION = "4.13.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -338,6 +338,19 @@ export const autoEntities = (hass, { area, exclude = [] } = {}) => {
 };
 
 /**
+ * Einheit hinter dem Wert. Leer = wie bisher: Prozent auf der Batteriekarte, die Einheit
+ * der Entität auf der Gauge Card. "auto" nimmt immer die Einheit der Entität, "none" lässt
+ * sie weg, alles andere wird wörtlich angehängt.
+ */
+export const unitFor = (unit, st, generic) => {
+  const u = String(unit ?? "").trim();
+  if (u === "none") return "";
+  if (u === "auto") return st?.attributes?.unit_of_measurement ?? "";
+  if (u) return u;
+  return generic ? st?.attributes?.unit_of_measurement ?? "" : "%";
+};
+
+/**
  * Zahl mit fester Nachkommastellenzahl, in der Schreibweise der HA-Sprache (1.234,5).
  * Ohne `precision` bleibt der Wert so, wie die Entität ihn liefert.
  */
@@ -469,6 +482,7 @@ export const DEFAULTS = {
   blink_tip: false,
   blink_cycles: 3,
   reserve: "",
+  unit: "",
   levels_above_reserve: false,
   peak: false,
   peak_hold: 60,
@@ -882,11 +896,14 @@ export class BatteryLedCard extends Base {
   _stateText(st, lvl, item, c, locale) {
     if (lvl === null) return LABELS[pickLang(this._hass?.language)].na;
     const digits = item.precision ?? c.precision;
-    if (!this._generic) return `${formatValue(lvl, digits ?? 0, locale)}%`;
-    const unit = st.attributes.unit_of_measurement;
-    const v = formatValue(st.state, digits, locale);
-    return unit ? `${v} ${unit}` : v;
+    // Auf der Batteriekarte ist der Wert der Ladestand, auf der Gauge Card der Rohwert
+    const v = this._generic
+      ? formatValue(st.state, digits, locale)
+      : formatValue(lvl, digits ?? 0, locale);
+    const unit = unitFor(item.unit ?? c.unit, st, this._generic);
+    return unit === "%" ? `${v}%` : unit ? `${v} ${unit}` : v;
   }
+
 
   /**
    * Erst die angegebenen Ladefluss-Sensoren, sonst der eigene Verlauf der Entität.
@@ -1005,6 +1022,7 @@ const LABELS = {
     blink_tip: "Also blink the tip (with pulse and fill)",
     blink_cycles: "Blinks per round (fill + blink)",
     reserve: "Reserve: % or entity (e.g. 10 or sensor.lg_reserve)",
+    unit: "Unit (empty = default, auto = from the entity, none = omit)",
     invert: "Flip the flow direction (sensor counts the other way round)",
     levels_above_reserve: "Measure thresholds above the reserve",
     peak: "Peak-hold mark",
@@ -1085,6 +1103,7 @@ const LABELS = {
     blink_tip: "Spitze zusätzlich blinken lassen (bei Puls und Füllen)",
     blink_cycles: "Blinkzahl je Runde (Füllen + Blinken)",
     reserve: "Reserve: % oder Entität (z. B. 10 oder sensor.lg_reserve)",
+    unit: "Einheit (leer = Standard, auto = von der Entität, none = weglassen)",
     invert: "Flussrichtung umdrehen (Sensor zählt andersherum)",
     levels_above_reserve: "Schwellen am nutzbaren Teil messen",
     peak: "Peak-Hold-Marke",
@@ -1240,6 +1259,7 @@ const itemFields = (generic) =>
           { name: "trend_deadband", selector: num(0, 100, 0.1) },
         ] },
         { name: "reserve", selector: { text: {} } },
+        { name: "unit", selector: { text: {} } },
       ]
     : [
         { name: "entity", selector: ent(VALUE_DOMAINS) },
@@ -1252,6 +1272,7 @@ const itemFields = (generic) =>
         { name: "discharge", selector: ent({ domain: "sensor" }) },
         { name: "deadband", selector: num(0, 10000, 0.1) },
         { name: "reserve", selector: { text: {} } },
+        { name: "unit", selector: { text: {} } },
         { name: "invert", selector: { boolean: {} } },
       ];
 
@@ -1301,6 +1322,7 @@ const tailSchema = (generic, lang = "en") => {
       { name: "blink_tip", selector: { boolean: {} } },
       { name: "blink_cycles", selector: num(1, 10) },
       { name: "reserve", selector: { text: {} } },
+      { name: "unit", selector: { text: {} } },
       {
         name: "flow_style",
         selector: {

@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.12.0** — the entity picker no longer insists on `device_class: battery`
+**v4.13.0** — the unit can be chosen freely instead of always `%`
 
 Two Lovelace cards, one file, one resource:
 
@@ -93,6 +93,7 @@ entities:
 | `pulse_period` | 1–60 s | `3` | time from one pass to the next — the **gap**. Doesn't change the speed; anything beyond `pulse_travel` is idle time. Smaller than `pulse_travel` lets passes overlap |
 | `pulse_width` | 1–8 | `2` | how many segments are dark at once — the width of the travelling gap |
 | `blink_cycles` | 1–10 | `3` | number of blinks per round, for `animation: fill_blink` only |
+| `unit` | string | – | Unit behind the value. Empty keeps the previous behaviour (`%` on the battery card, the entity's unit on the gauge card), `auto` always takes the entity's unit, `none` omits it, anything else is appended literally. Also settable per row |
 | `reserve` | number \| entity | – | Share of the bar that is not usable (battery reserve / minimum SoC). Either a plain number or an entity that provides it; a `%` in the entity state is ignored. Also settable per row, where it overrides the card value |
 | `levels_above_reserve` | bool | `false` | Measures thresholds and `warn_below` against the usable part instead of the whole bar: with `reserve: 20`, a level of 20 counts as empty and 100 stays full. Without it a battery with a high reserve never reaches the lower thresholds — at `reserve: 20` the bar still shows a fifth when the battery is effectively empty. With `color_mode: segment` the ramp moves into the usable part as well |
 | `blink_tip` | bool | `false` | makes the tip blink in addition to `pulse`, `fill` and `fill_blink`, as soon as a direction is detected. Ignored for `none` (where it would just be `blink`) and for `blink`/`blink_always` (where the tip already blinks) |
@@ -148,6 +149,7 @@ flapping would postpone the rebuild forever. `0` = immediately.
 | `icon` | icon instead of the entity's own, e.g. `mdi:home-battery` |
 | `precision` | decimal places for this row only |
 | `reserve` | reserve for this row — a number or the entity that provides it |
+| `unit` | unit for this row only |
 | `invert` | flips the detected direction, for sensors that count the other way round (`..._inverted`) |
 | `charging` | `binary_sensor`, `on` = charging |
 | `power` | a signed sensor: `+` charging, `−` discharging |
