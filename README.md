@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.14.1** — scaling non-battery entities belongs on the gauge card, not the battery card
+**v4.14.2** — the gauge card's editor says "value" where it does not mean percent
 
 Two Lovelace cards, one file, one resource:
 

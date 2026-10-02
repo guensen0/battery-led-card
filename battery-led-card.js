@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.14.1";
+export const VERSION = "4.14.2";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -1166,11 +1166,13 @@ const LABELS = {
 // Was auf der Gauge-Karte anders heißt — dort gibt es keinen "Ladefluss", nur einen Trend.
 const GENERIC_LABELS = {
   en: {
+    show_state: "Show value",          // die Gauge Card zeigt den Rohwert, keine Prozente
     show_flow: "Show trend arrow",
     animate_flow: "Animate trend arrow",
     items: "Selected entities",
   },
   de: {
+    show_state: "Wert anzeigen",
     show_flow: "Trend-Pfeil anzeigen",
     animate_flow: "Trend-Pfeil animieren",
     items: "Gewählte Entitäten",

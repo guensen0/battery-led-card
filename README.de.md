@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.14.1** — Nicht-Batterien skaliert die Gauge Card, nicht die Batteriekarte
+**v4.14.2** — im Editor der Gauge Card heißt es "Wert", wo nicht Prozent gemeint ist
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
