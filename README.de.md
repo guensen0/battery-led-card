@@ -377,6 +377,27 @@ trend_hold: 60
 Für die Batteriekarte stattdessen `sensor.testwert_pendelnd` mit
 `power: sensor.testleistung` — dann kommt die Richtung aus der Leistung statt aus dem Trend.
 
+## Der Editor
+
+Die Optionen liegen in aufklappbaren Gruppen statt in einem langen Raster:
+
+| Gruppe | Enthält |
+|---|---|
+| Gewählte Entitäten | je Zeile ein Block — Entität, Name, Symbol, Ladefluss-Sensoren, Reserve |
+| Inhalt der Zeile | Symbol, Name, Wert, deren Breiten, Nachkommastellen, Einheit, letzte Änderung |
+| Balken und Gehäuse | Segmente, Spalten, Höhe, Abstand, Sortierung, Pluspol, Rahmen |
+| Farben | Rampe, Gehäuse-Voreinstellung, Färbungsmodus, Schwellen, eigene Farben |
+| Ladefluss | Pfeil, dessen Darstellung, Animation und Maßstab, Totband |
+| Animation | die Betriebsart und die Stellschrauben, die dazugehören |
+| Reserve und Warnung | Reserve, Schwellen darüber, Warnung, Peak-Hold |
+| Skala und Trend | `min`/`max` und die Trend-Optionen — nur Gauge Card |
+
+Ein Feld erscheint nur, solange es etwas bewirken kann: `cap_size` braucht `cap`,
+`pulse_width` gibt es nur bei `animation: pulse`, `blink_cycles` nur bei `fill_blink`, die
+Trend-Einstellungen erst wenn `trend_flow` an ist, `levels_above_reserve` erst wenn irgendwo
+eine Reserve gesetzt ist. Eine Gruppe, die dadurch leer bleibt, verschwindet mit. Ausgegraut
+wird nichts — was nicht wirken kann, steht gar nicht erst da.
+
 ## Sprache des Editors
 
 Beschriftungen, Auswahl-Optionen, Knöpfe und Hinweise im grafischen Editor folgen
