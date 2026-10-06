@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.16.0";
+export const VERSION = "4.17.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -160,18 +160,22 @@ export const tipBlinks = (animation, blinkTip) =>
 
 /**
  * Wann die Zeile warnt.
- *   level    unter warn_below — eine Vorwarnung, die Luft lässt (Default)
+ *   level    unter warn_below, gemessen wie die Farbschwellen — also am nutzbaren Teil,
+ *            wenn levels_above_reserve an ist (Default)
+ *   soc      unter warn_below des rohen Ladestands, unabhängig von levels_above_reserve:
+ *            20 heißt hier wirklich 20 %
  *   reserve  sobald die Reserve erreicht ist, also nichts mehr abrufbar ist; ohne gesetzte
  *            Reserve bleibt es bei warn_below
- *   both     beides, die Vorwarnung und das Erreichen der Reserve
- * `lvlScaled` ist der Stand, den auch die Farbschwellen sehen (je nach
- * levels_above_reserve roh oder auf den nutzbaren Teil bezogen).
+ *   both     Altlast aus 4.16: Reserve oder Schwelle. Deckt die Schwelle die Reserve ohnehin
+ *            ab — der Normalfall —, ist es dasselbe wie level. Nicht mehr im Editor.
+ * `lvlScaled` ist der Stand, den auch die Farbschwellen sehen.
  */
 export const warnActive = (mode, lvl, lvlScaled, reserve, warnBelow) => {
   if (lvl === null) return false;
   const hasReserve = reserve !== null && reserve !== undefined && reserve > 0;
   const atReserve = hasReserve && lvl <= reserve;
   const underLimit = warnBelow > 0 && lvlScaled < warnBelow;
+  if (mode === "soc") return warnBelow > 0 && lvl < warnBelow;
   if (mode === "reserve") return hasReserve ? atReserve : underLimit;
   if (mode === "both") return atReserve || underLimit;
   return underLimit;
@@ -1238,9 +1242,9 @@ export const labelFor = (schema, generic, labels = LABELS.en, generic_labels = G
 // separat von LABELS, weil das keine Feldnamen sind, sondern Werte innerhalb eines Felds.
 const OPTION_LABELS = {
   en: {
-    warn_mode_level: "Below the warning threshold",
+    warn_mode_level: "Below the threshold, as the colours see it",
+    warn_mode_soc: "Below the threshold, raw state of charge",
     warn_mode_reserve: "When the reserve is reached",
-    warn_mode_both: "Both",
     animation_none: "Off",
     animation_blink: "Blink — leading segment, on flow",
     animation_blink_always: "Blink — leading segment, always",
@@ -1262,9 +1266,9 @@ const OPTION_LABELS = {
     color_mode_segment: "Each segment by its own threshold",
   },
   de: {
-    warn_mode_level: "Unter der Warnschwelle",
+    warn_mode_level: "Unter der Schwelle, wie die Farben sie sehen",
+    warn_mode_soc: "Unter der Schwelle, roher Ladestand",
     warn_mode_reserve: "Bei Erreichen der Reserve",
-    warn_mode_both: "Beides",
     animation_none: "Aus",
     animation_blink: "Blinken — führendes Segment, bei Fluss",
     animation_blink_always: "Blinken — führendes Segment, immer",
@@ -1352,8 +1356,8 @@ const tailSchema = (generic, lang = "en") => {
             mode: "dropdown",
             options: [
               { value: "level", label: O.warn_mode_level },
+              { value: "soc", label: O.warn_mode_soc },
               { value: "reserve", label: O.warn_mode_reserve },
-              { value: "both", label: O.warn_mode_both },
             ],
           },
         },

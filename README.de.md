@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.16.0** — `warn_mode`: Warnung unter einer Schwelle, bei Erreichen der Reserve, oder beides
+**v4.17.0** — `warn_mode`: `level`, `soc` oder `reserve` — drei Fragen, drei Antworten
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -110,7 +110,7 @@ entities:
 | `color_state` | bool | `true` | Wert rechts in der Richtungsfarbe, sobald ein Fluss erkannt ist |
 | `color_mode` | `level` \| `segment` | `level` | `level`: der ganze Balken trägt die Farbe der aktuellen Stufe. `segment`: jedes Segment hat seine eigene Farbe nach der Schwelle, die es abdeckt — die Rampe läuft dann von links nach rechts durch |
 | `warn_below` | 0–100 | `0` | Unter diesem Stand pulsiert der Balken und der Wert wird fett gesetzt, `0` = aus. Die **Farbe** des Werts bleibt dem Ladefluss vorbehalten, damit sich beide nicht widersprechen |
-| `warn_mode` | `level` \| `reserve` \| `both` | `level` | Wann die Zeile warnt. `level`: unter `warn_below`, eine Vorwarnung mit Handlungsspielraum. `reserve`: erst bei Erreichen der Reserve, wenn nichts mehr abrufbar ist — eher Status als Warnung; ohne gesetzte Reserve gilt wieder `warn_below`. `both`: beides |
+| `warn_mode` | `level` \| `soc` \| `reserve` | `level` | Wann die Zeile warnt. `level`: unter `warn_below`, eine Vorwarnung mit Handlungsspielraum. `reserve`: erst bei Erreichen der Reserve, wenn nichts mehr abrufbar ist — eher Status als Warnung; ohne gesetzte Reserve gilt wieder `warn_below`. `both`: beides |
 | `show_last_changed` | bool | `false` | „vor 3 Stunden" neben dem Namen — entlarvt tote Sensoren |
 | `deadband` | number | `1` | Ladefluss-Schwelle (Standard für alle Zeilen), in der Einheit der Leistungssensoren |
 | `auto` | bool | `false` | Alle `device_class: battery`-Entitäten einsammeln |
@@ -218,23 +218,19 @@ nicht der rohe Ladestand:
 
 Die drei Betriebsarten, für `reserve: 10`, `warn_below: 20`, `levels_above_reserve: true`:
 
-| `warn_mode` | blinkt unter | warum |
+| `warn_mode` | blinkt unter | Bedeutung |
 |---|---|---|
-| `level` | 28 % SoC | 20 % der 90 nutzbaren Punkte, Vorwarnung |
-| `reserve` | 10 % SoC | erst bei Erreichen des Bodens, `warn_below` bleibt außen vor |
-| `both` | 28 % SoC | hier gleich `level` — die Schwelle deckt die Reserve schon ab |
+| `level` | 28 % SoC | die Schwelle so, wie die **Farben** sie sehen — 20 % der 90 nutzbaren Punkte |
+| `soc` | 20 % SoC | die Schwelle am **rohen** Ladestand, unabhängig von `levels_above_reserve` |
+| `reserve` | 10 % SoC | wenn der Boden erreicht ist und nichts mehr abrufbar; `warn_below` bleibt außen vor |
 
-`both` unterscheidet sich von `level` nur, wenn die Reserve **über** der Schwelle liegt, und das
-setzt `levels_above_reserve: false` voraus:
+Jede Betriebsart beantwortet eine andere Frage: `level` hält die Warnung im Gleichschritt mit
+den Farben, bei `soc` heißt 20 tatsächlich 20, und `reserve` braucht gar keine Schwelle. Ohne
+gesetzte Reserve fällt `reserve` auf `warn_below` zurück, und `level` und `soc` sind dasselbe.
 
-| | `reserve` | `warn_below` | `warn_mode` | blinkt unter |
-|---|---|---|---|---|
-| roher Ladestand | 30 | 20 | `level` | 20 % |
-| roher Ladestand | 30 | 20 | `reserve` | 30 % |
-| roher Ladestand | 30 | 20 | `both` | **30 %** |
-
-Mit `levels_above_reserve: true` wird die Reserve auf 0 abgebildet und liegt damit unter jeder
-positiven Schwelle — die Schwelle deckt sie also immer ab, `both` bringt dann nichts.
+`both` aus 4.16.0 wird weiterhin gelesen, steht aber nicht mehr im Editor: es löste bei Schwelle
+oder Reserve aus — und da die Schwelle die Reserve fast immer abdeckt, verhielt es sich wie
+`level`.
 
 ### Farbstufen
 

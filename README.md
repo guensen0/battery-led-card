@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.16.0** — `warn_mode`: warn below a threshold, on reaching the reserve, or both
+**v4.17.0** — `warn_mode`: `level`, `soc` or `reserve` — three questions, three answers
 
 Two Lovelace cards, one file, one resource:
 
@@ -109,7 +109,7 @@ entities:
 | `color_state` | bool | `true` | value on the right in the direction color, as soon as a flow is detected |
 | `color_mode` | `level` \| `segment` | `level` | `level`: the whole bar carries the color of the current level. `segment`: each segment has its own color by the threshold it covers — the ramp then runs left to right |
 | `warn_below` | 0–100 | `0` | below this level the bar pulses and the value is set in bold, `0` = off. The **colour** of the value stays reserved for the charge direction, so the two never contradict each other |
-| `warn_mode` | `level` \| `reserve` \| `both` | `level` | When the row warns. `level`: below `warn_below`, an early warning with room to act. `reserve`: only once the reserve is reached, so nothing usable is left — a status rather than a warning; without a reserve it falls back to `warn_below`. `both`: either of them |
+| `warn_mode` | `level` \| `soc` \| `reserve` | `level` | When the row warns. `level`: below `warn_below`, an early warning with room to act. `reserve`: only once the reserve is reached, so nothing usable is left — a status rather than a warning; without a reserve it falls back to `warn_below`. `both`: either of them |
 | `show_last_changed` | bool | `false` | "3 hours ago" next to the name — exposes dead sensors |
 | `deadband` | number | `1` | charge-flow threshold (default for all rows), in the unit of the power sensors |
 | `auto` | bool | `false` | collect all `device_class: battery` entities |
@@ -216,23 +216,18 @@ is not the raw state of charge:
 
 The three modes, for `reserve: 10`, `warn_below: 20`, `levels_above_reserve: true`:
 
-| `warn_mode` | blinks below | why |
+| `warn_mode` | blinks below | what it means |
 |---|---|---|
-| `level` | 28 % SoC | 20 % of the 90 usable points, early warning |
-| `reserve` | 10 % SoC | only once the floor is reached, `warn_below` is ignored |
-| `both` | 28 % SoC | same as `level` here — the threshold already covers the reserve |
+| `level` | 28 % SoC | the threshold as the **colours** see it — 20 % of the 90 usable points |
+| `soc` | 20 % SoC | the threshold on the **raw** state of charge, whatever `levels_above_reserve` says |
+| `reserve` | 10 % SoC | when the floor is reached and nothing usable is left; `warn_below` is ignored |
 
-`both` only differs from `level` when the reserve lies **above** the threshold, which takes
-`levels_above_reserve: false`:
+Each mode answers a different question: `level` keeps the warning in step with the colours,
+`soc` is the one where 20 really means 20, and `reserve` needs no threshold at all. Without a
+reserve, `reserve` falls back to `warn_below` and `level` and `soc` are the same thing.
 
-| | `reserve` | `warn_below` | `warn_mode` | blinks below |
-|---|---|---|---|---|
-| raw state of charge | 30 | 20 | `level` | 20 % |
-| raw state of charge | 30 | 20 | `reserve` | 30 % |
-| raw state of charge | 30 | 20 | `both` | **30 %** |
-
-With `levels_above_reserve: true` the reserve maps to 0, which is below every positive
-threshold — so the threshold always covers it and `both` adds nothing.
+`both` from 4.16.0 is still accepted but gone from the editor: it fired on the threshold or the
+reserve, and since the threshold almost always covers the reserve it behaved like `level`.
 
 ### Color levels
 
