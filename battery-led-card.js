@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.17.0";
+export const VERSION = "4.18.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -1242,6 +1242,13 @@ export const labelFor = (schema, generic, labels = LABELS.en, generic_labels = G
 // separat von LABELS, weil das keine Feldnamen sind, sondern Werte innerhalb eines Felds.
 const OPTION_LABELS = {
   en: {
+    group_row: "Row content",
+    group_bar: "Bar and housing",
+    group_colors: "Colours",
+    group_flow: "Charge flow",
+    group_animation: "Animation",
+    group_warn: "Reserve and warning",
+    group_scale: "Scale and trend",
     warn_mode_level: "Below the threshold, as the colours see it",
     warn_mode_soc: "Below the threshold, raw state of charge",
     warn_mode_reserve: "When the reserve is reached",
@@ -1266,6 +1273,13 @@ const OPTION_LABELS = {
     color_mode_segment: "Each segment by its own threshold",
   },
   de: {
+    group_row: "Inhalt der Zeile",
+    group_bar: "Balken und Gehäuse",
+    group_colors: "Farben",
+    group_flow: "Ladefluss",
+    group_animation: "Animation",
+    group_warn: "Reserve und Warnung",
+    group_scale: "Skala und Trend",
     warn_mode_level: "Unter der Schwelle, wie die Farben sie sehen",
     warn_mode_soc: "Unter der Schwelle, roher Ladestand",
     warn_mode_reserve: "Bei Erreichen der Reserve",
@@ -1335,149 +1349,173 @@ const itemFields = (generic) =>
 
 const BASE_SCHEMA = [{ name: "title", selector: { text: {} } }];
 
-const tailSchema = (generic, lang = "en") => {
+/**
+ * Sichtbarkeit eines Feldes. Was in der aktuellen Einstellung nichts bewirkt, wird
+ * ausgeblendet statt ausgegraut — ha-form kennt kein "deaktiviert", und ein Feld, das
+ * folgenlos bleibt, verwirrt mehr als es nützt. Rein rechnerisch, damit es testbar ist.
+ */
+export const fieldVisible = (name, c = {}, generic = false) => {
+  const anim = c.animation ?? "none";
+  const wave = ["pulse", "fill", "fill_blink"].includes(anim);
+  const hasReserve = String(c.reserve ?? "").trim() !== ""
+    || (c.entities ?? []).some((e) => String(e?.reserve ?? "").trim() !== "");
+  switch (name) {
+    case "name_width": return c.show_name !== false;
+    case "state_width":
+    case "precision":
+    case "unit": return c.show_state !== false;
+    case "flow_style":
+    case "animate_flow":
+    case "flow_full_scale": return c.show_flow !== false;
+    case "cap_size": return c.cap !== false;
+    case "peak_hold": return !!c.peak;
+    case "pulse_travel":
+    case "pulse_period":
+    case "blink_tip": return wave;
+    case "pulse_width": return anim === "pulse";
+    case "blink_cycles": return anim === "fill_blink";
+    case "levels_above_reserve": return hasReserve;
+    case "warn_mode": return (c.warn_below ?? 0) > 0 || hasReserve;
+    case "trend_hold":
+    case "trend_deadband":
+    case "trend_history":
+    case "trend_full_scale": return generic && c.trend_flow !== false;
+    default: return true;
+  }
+};
+
+/** Felder rekursiv aussieben — Gruppen und Raster können Felder enthalten. */
+const prune = (fields, config, generic) =>
+  fields
+    .map((f) => (f.schema ? { ...f, schema: prune(f.schema, config, generic) } : f))
+    .filter((f) => (f.schema ? f.schema.length : fieldVisible(f.name, config, generic)));
+
+const select = (name, options) => ({
+  name,
+  selector: { select: { mode: "dropdown", options } },
+});
+
+const tailSchema = (generic, lang = "en", config = {}) => {
   const O = OPTION_LABELS[lang];
+  const L = LABELS[lang];
+  const keep = (fields) => prune(fields, config, generic);
+  // Eine Gruppe ohne Namen reicht die Daten unverändert durch — die Config bleibt flach
+  const group = (title, fields, extra = []) => {
+    const visible = keep(fields);
+    return visible.length || extra.length
+      ? [{
+          type: "expandable",
+          name: "",
+          title,
+          schema: [...(visible.length ? [{ type: "grid", schema: visible }] : []), ...extra],
+        }]
+      : [];
+  };
+
   return [
-  {
-    type: "grid",
-    schema: [
+    ...group(O.group_row, [
+      { name: "show_icon", selector: { boolean: {} } },
+      { name: "show_name", selector: { boolean: {} } },
+      { name: "name_width", selector: { text: {} } },
+      { name: "show_state", selector: { boolean: {} } },
+      { name: "state_width", selector: { text: {} } },
+      { name: "precision", selector: num(0, 5) },
+      { name: "unit", selector: { text: {} } },
+      { name: "show_last_changed", selector: { boolean: {} } },
+    ]),
+    ...group(O.group_bar, [
       { name: "segments", selector: num(1, 40) },
       { name: "columns", selector: num(1, 6) },
       { name: "bar_height", selector: num(8, 80) },
       { name: "row_gap", selector: num(0, 40) },
-      { name: "name_width", selector: { text: {} } },
-      { name: "state_width", selector: { text: {} } },
-      { name: "precision", selector: num(0, 5) },
-      { name: "warn_below", selector: num(0, 100) },
-      {
-        name: "warn_mode",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "level", label: O.warn_mode_level },
-              { value: "soc", label: O.warn_mode_soc },
-              { value: "reserve", label: O.warn_mode_reserve },
-            ],
-          },
-        },
-      },
-      { name: "show_icon", selector: { boolean: {} } },
-      { name: "show_name", selector: { boolean: {} } },
-      { name: "show_state", selector: { boolean: {} } },
-      { name: "show_flow", selector: { boolean: {} } },
-      { name: "animate_flow", selector: { boolean: {} } },
-      { name: "peak", selector: { boolean: {} } },
-      { name: "peak_hold", selector: num(1, 86400, 1) },
-      { name: "color_state", selector: { boolean: {} } },
-      {
-        name: "animation",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "none", label: O.animation_none },
-              { value: "blink", label: O.animation_blink },
-              { value: "blink_always", label: O.animation_blink_always },
-              { value: "pulse", label: O.animation_pulse },
-              { value: "fill", label: O.animation_fill },
-              { value: "fill_blink", label: O.animation_fill_blink },
-            ],
-          },
-        },
-      },
-      { name: "pulse_travel", selector: num(0.2, 20, 0.1) },
-      { name: "pulse_period", selector: num(1, 60, 0.5) },
-      { name: "pulse_width", selector: num(1, 8, 0.5) },
-      { name: "blink_tip", selector: { boolean: {} } },
-      { name: "blink_cycles", selector: num(1, 10) },
-      { name: "reserve", selector: { text: {} } },
-      { name: "unit", selector: { text: {} } },
-      {
-        name: "flow_style",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "arrow", label: O.flow_style_arrow },
-              { value: "alternate", label: O.flow_style_alternate },
-            ],
-          },
-        },
-      },
-      ...(generic ? [] : [{ name: "flow_full_scale", selector: num(1, 100000, 1) }]),
-      ...(generic
-        ? [
-            { name: "min", selector: num(-1000000, 1000000, 0.01) },
-            { name: "max", selector: num(-1000000, 1000000, 0.01) },
-            { name: "trend_flow", selector: { boolean: {} } },
-            { name: "trend_hold", selector: num(10, 86400, 10) },
-            { name: "trend_deadband", selector: num(0, 100, 0.1) },
-            { name: "trend_history", selector: { boolean: {} } },
-            { name: "trend_full_scale", selector: num(0.01, 100000, 0.01) },
-          ]
-        : []),
+      { name: "sort", selector: { boolean: {} } },
       { name: "cap", selector: { boolean: {} } },
       { name: "cap_size", selector: num(1, 20) },
       { name: "frame_width", selector: num(0, 6) },
-      { name: "sort", selector: { boolean: {} } },
+    ]),
+    ...group(O.group_colors, [
+      select("preset", [
+        { value: "standard", label: O.preset_standard },
+        { value: "led-classic", label: O.preset_led_classic },
+        { value: "ampel", label: O.preset_ampel },
+        { value: "neon", label: O.preset_neon },
+        { value: "mono", label: O.preset_mono },
+        { value: "invers", label: O.preset_invers },
+      ]),
+      select("surface", [
+        { value: "classic", label: O.surface_classic },
+        { value: "glass", label: O.surface_glass },
+        { value: "flat", label: O.surface_flat },
+      ]),
+      select("color_mode", [
+        { value: "level", label: O.color_mode_level },
+        { value: "segment", label: O.color_mode_segment },
+      ]),
+      { name: "color_state", selector: { boolean: {} } },
+    ], [
       {
-        name: "preset",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "standard", label: O.preset_standard },
-              { value: "led-classic", label: O.preset_led_classic },
-              { value: "ampel", label: O.preset_ampel },
-              { value: "neon", label: O.preset_neon },
-              { value: "mono", label: O.preset_mono },
-              { value: "invers", label: O.preset_invers },
-            ],
-          },
-        },
+        type: "expandable",
+        name: "thresholds",
+        title: L.thresholds,
+        schema: ["critical", "low", "medium", "high"].map((n) => ({ name: n, selector: num(0, 100) })),
       },
       {
-        name: "surface",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "classic", label: O.surface_classic },
-              { value: "glass", label: O.surface_glass },
-              { value: "flat", label: O.surface_flat },
-            ],
-          },
-        },
+        type: "expandable",
+        name: "colors",
+        title: L.colors,
+        schema: COLOR_KEYS.map(([n]) => ({ name: n, selector: { ui_color: {} } })),
       },
-      {
-        name: "color_mode",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "level", label: O.color_mode_level },
-              { value: "segment", label: O.color_mode_segment },
-            ],
-          },
-        },
-      },
-      { name: "show_last_changed", selector: { boolean: {} } },
-      ...(generic ? [] : [{ name: "deadband", selector: num(0, 10000, 0.1) }]),
-    ],
-  },
-  {
-    type: "expandable",
-    name: "thresholds",
-    title: LABELS[lang].thresholds,
-    schema: ["critical", "low", "medium", "high"].map((name) => ({ name, selector: num(0, 100) })),
-  },
-  {
-    type: "expandable",
-    name: "colors",
-    title: LABELS[lang].colors,
-    schema: COLOR_KEYS.map(([name]) => ({ name, selector: { ui_color: {} } })),
-  },
+    ]),
+    ...group(O.group_flow, [
+      { name: "show_flow", selector: { boolean: {} } },
+      select("flow_style", [
+        { value: "arrow", label: O.flow_style_arrow },
+        { value: "alternate", label: O.flow_style_alternate },
+      ]),
+      { name: "animate_flow", selector: { boolean: {} } },
+      ...(generic ? [] : [
+        { name: "flow_full_scale", selector: num(1, 100000, 1) },
+        { name: "deadband", selector: num(0, 10000, 0.1) },
+      ]),
+    ]),
+    ...group(O.group_animation, [
+      select("animation", [
+        { value: "none", label: O.animation_none },
+        { value: "blink", label: O.animation_blink },
+        { value: "blink_always", label: O.animation_blink_always },
+        { value: "pulse", label: O.animation_pulse },
+        { value: "fill", label: O.animation_fill },
+        { value: "fill_blink", label: O.animation_fill_blink },
+      ]),
+      { name: "pulse_travel", selector: num(0.2, 20, 0.1) },
+      { name: "pulse_period", selector: num(1, 60, 0.5) },
+      { name: "pulse_width", selector: num(1, 8, 0.5) },
+      { name: "blink_cycles", selector: num(1, 10) },
+      { name: "blink_tip", selector: { boolean: {} } },
+    ]),
+    ...group(O.group_warn, [
+      { name: "reserve", selector: { text: {} } },
+      { name: "levels_above_reserve", selector: { boolean: {} } },
+      { name: "warn_below", selector: num(0, 100) },
+      select("warn_mode", [
+        { value: "level", label: O.warn_mode_level },
+        { value: "soc", label: O.warn_mode_soc },
+        { value: "reserve", label: O.warn_mode_reserve },
+      ]),
+      { name: "peak", selector: { boolean: {} } },
+      { name: "peak_hold", selector: num(1, 86400, 1) },
+    ]),
+    ...(generic
+      ? group(O.group_scale, [
+          { name: "min", selector: num(-1000000, 1000000, 0.01) },
+          { name: "max", selector: num(-1000000, 1000000, 0.01) },
+          { name: "trend_flow", selector: { boolean: {} } },
+          { name: "trend_hold", selector: num(10, 86400, 10) },
+          { name: "trend_deadband", selector: num(0, 100, 0.1) },
+          { name: "trend_history", selector: { boolean: {} } },
+          { name: "trend_full_scale", selector: num(0.01, 100000, 0.01) },
+        ])
+      : []),
   ];
 };
 
@@ -1496,8 +1534,8 @@ const COLOR_KEYS = [
  * Ein aufklappbarer Block je Entität — Auswahl, Name und Ladefluss an einer Stelle —
  * plus ein leerer Block am Ende zum Anhängen.
  */
-const itemsSchema = (entities, hass, generic, lang = "en") => {
-  const fields = itemFields(generic);
+const itemsSchema = (entities, hass, generic, lang = "en", config = {}) => {
+  const fields = prune(itemFields(generic), config, generic);
   return {
     type: "expandable",
     name: "items",
@@ -1527,7 +1565,7 @@ export const buildEntities = (items = []) =>
       return Object.keys(extra).length ? { entity: it.entity, ...extra } : it.entity;
     });
 
-class BatteryLedCardEditor extends Base {
+export class BatteryLedCardEditor extends Base {
   get _generic() {
     return this.localName === "led-gauge-card-editor";
   }
@@ -1569,8 +1607,8 @@ class BatteryLedCardEditor extends Base {
     this._form.hass = this._hass;
     this._form.schema = [
       ...BASE_SCHEMA,
-      itemsSchema(items, this._hass, this._generic, this._lang),
-      ...tailSchema(this._generic, this._lang),
+      itemsSchema(items, this._hass, this._generic, this._lang, this._config),
+      ...tailSchema(this._generic, this._lang, this._config),
     ];
     this._form.data = {
       ...DEFAULTS,                            // sonst stehen ungesetzte Schalter im Editor auf aus

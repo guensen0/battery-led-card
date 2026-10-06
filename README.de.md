@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.17.0** — `warn_mode`: `level`, `soc` oder `reserve` — drei Fragen, drei Antworten
+**v4.18.0** — der Editor ist gruppiert, und Optionen ohne Wirkung werden ausgeblendet
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 

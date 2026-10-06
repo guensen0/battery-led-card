@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.17.0** — `warn_mode`: `level`, `soc` or `reserve` — three questions, three answers
+**v4.18.0** — the editor is grouped, and options that would do nothing are hidden
 
 Two Lovelace cards, one file, one resource:
 
@@ -374,6 +374,27 @@ trend_hold: 60
 
 For the battery card, use `sensor.testwert_pendelnd` with `power: sensor.testleistung`
 instead — then the direction comes from the power value rather than the trend.
+
+## The editor
+
+The options sit in collapsible groups instead of one long grid:
+
+| Group | Holds |
+|---|---|
+| Selected entities | one block per row — entity, name, icon, flow sensors, reserve |
+| Row content | icon, name, value, their widths, decimals, unit, last-changed |
+| Bar and housing | segments, columns, height, gap, sort, terminal, frame |
+| Colours | ramp, housing preset, colouring mode, thresholds, custom colours |
+| Charge flow | arrow, its style, animation and scale, deadband |
+| Animation | the mode and the settings belonging to it |
+| Reserve and warning | reserve, thresholds above it, warning, peak hold |
+| Scale and trend | `min`/`max` and the trend options — gauge card only |
+
+A field only appears while it can do something: `cap_size` needs `cap`, `pulse_width` only
+exists for `animation: pulse`, `blink_cycles` only for `fill_blink`, the trend settings only
+once `trend_flow` is on, `levels_above_reserve` only once a reserve is set somewhere. A group
+that ends up empty disappears with it. Nothing is greyed out — a field that cannot act is
+simply not shown.
 
 ## Editor language
 
