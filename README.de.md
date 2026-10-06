@@ -206,6 +206,36 @@ durch, im hellen Theme kippt derselbe Schleier ins Dunkle. `flat` lässt das Geh
 Einzelne Werte übersteuerst du wie gehabt über `colors.body`, `colors.off`, `colors.frame` —
 die schlagen sowohl `surface` als auch `preset`.
 
+### Warnung (`warn_below`, `warn_mode`)
+
+Eine Warnung zeigt sich als pulsierender Balken und fett gesetzter Wert; die Farbe des Werts
+bleibt beim Ladefluss. Wann sie auslöst, entscheidet `warn_mode`.
+
+Mit `levels_above_reserve: true` wird die Schwelle am **nutzbaren** Teil gemessen, sie ist also
+nicht der rohe Ladestand:
+
+    SoC-Schwelle = Reserve + warn_below × (100 − Reserve) / 100
+
+Die drei Betriebsarten, für `reserve: 10`, `warn_below: 20`, `levels_above_reserve: true`:
+
+| `warn_mode` | blinkt unter | warum |
+|---|---|---|
+| `level` | 28 % SoC | 20 % der 90 nutzbaren Punkte, Vorwarnung |
+| `reserve` | 10 % SoC | erst bei Erreichen des Bodens, `warn_below` bleibt außen vor |
+| `both` | 28 % SoC | hier gleich `level` — die Schwelle deckt die Reserve schon ab |
+
+`both` unterscheidet sich von `level` nur, wenn die Reserve **über** der Schwelle liegt, und das
+setzt `levels_above_reserve: false` voraus:
+
+| | `reserve` | `warn_below` | `warn_mode` | blinkt unter |
+|---|---|---|---|---|
+| roher Ladestand | 30 | 20 | `level` | 20 % |
+| roher Ladestand | 30 | 20 | `reserve` | 30 % |
+| roher Ladestand | 30 | 20 | `both` | **30 %** |
+
+Mit `levels_above_reserve: true` wird die Reserve auf 0 abgebildet und liegt damit unter jeder
+positiven Schwelle — die Schwelle deckt sie also immer ab, `both` bringt dann nichts.
+
 ### Farbstufen
 
 | Schlüssel | Default-Schwelle | Default-Farbe |

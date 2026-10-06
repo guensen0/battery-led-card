@@ -204,6 +204,36 @@ theme the same veil turns dark instead of light. `flat` drops the housing entire
 Override individual values as usual via `colors.body`, `colors.off`, `colors.frame` — these
 beat both `surface` and `preset`.
 
+### Warning (`warn_below`, `warn_mode`)
+
+A warning shows as the pulsing bar plus a bold value; the colour of the value stays with the
+charge direction. `warn_mode` decides when it fires.
+
+With `levels_above_reserve: true` the threshold is measured against the **usable** part, so it
+is not the raw state of charge:
+
+    SoC threshold = reserve + warn_below × (100 − reserve) / 100
+
+The three modes, for `reserve: 10`, `warn_below: 20`, `levels_above_reserve: true`:
+
+| `warn_mode` | blinks below | why |
+|---|---|---|
+| `level` | 28 % SoC | 20 % of the 90 usable points, early warning |
+| `reserve` | 10 % SoC | only once the floor is reached, `warn_below` is ignored |
+| `both` | 28 % SoC | same as `level` here — the threshold already covers the reserve |
+
+`both` only differs from `level` when the reserve lies **above** the threshold, which takes
+`levels_above_reserve: false`:
+
+| | `reserve` | `warn_below` | `warn_mode` | blinks below |
+|---|---|---|---|---|
+| raw state of charge | 30 | 20 | `level` | 20 % |
+| raw state of charge | 30 | 20 | `reserve` | 30 % |
+| raw state of charge | 30 | 20 | `both` | **30 %** |
+
+With `levels_above_reserve: true` the reserve maps to 0, which is below every positive
+threshold — so the threshold always covers it and `both` adds nothing.
+
 ### Color levels
 
 | Key | Default threshold | Default color |
