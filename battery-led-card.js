@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.15.0";
+export const VERSION = "4.16.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -157,6 +157,25 @@ export const fillKeyframes = (name, segments, dim = 0.3, span = 1) =>
  */
 export const tipBlinks = (animation, blinkTip) =>
   !!blinkTip && ["pulse", "fill", "fill_blink"].includes(animation);
+
+/**
+ * Wann die Zeile warnt.
+ *   level    unter warn_below — eine Vorwarnung, die Luft lässt (Default)
+ *   reserve  sobald die Reserve erreicht ist, also nichts mehr abrufbar ist; ohne gesetzte
+ *            Reserve bleibt es bei warn_below
+ *   both     beides, die Vorwarnung und das Erreichen der Reserve
+ * `lvlScaled` ist der Stand, den auch die Farbschwellen sehen (je nach
+ * levels_above_reserve roh oder auf den nutzbaren Teil bezogen).
+ */
+export const warnActive = (mode, lvl, lvlScaled, reserve, warnBelow) => {
+  if (lvl === null) return false;
+  const hasReserve = reserve !== null && reserve !== undefined && reserve > 0;
+  const atReserve = hasReserve && lvl <= reserve;
+  const underLimit = warnBelow > 0 && lvlScaled < warnBelow;
+  if (mode === "reserve") return hasReserve ? atReserve : underLimit;
+  if (mode === "both") return atReserve || underLimit;
+  return underLimit;
+};
 
 /**
  * Schlüssel in lesbarer Reihenfolge: `type` oben, `entities` unten, der Rest dazwischen.
@@ -518,6 +537,7 @@ export const DEFAULTS = {
   sort: false,
   deadband: 1,
   warn_below: 0,
+  warn_mode: "level",
   show_last_changed: false,
   colors: {},
   thresholds: {},
@@ -809,7 +829,7 @@ export class BatteryLedCard extends Base {
       if (name) name.textContent = item.name ?? st?.attributes?.friendly_name ?? item.entity;
       row.classList.toggle("dead", lvl === null);
       row.classList.toggle(
-        "warn", lvl !== null && c.warn_below > 0 && lvlForColor < c.warn_below,
+        "warn", warnActive(c.warn_mode, lvl, lvlForColor, resPct, c.warn_below),
       );
       if (pct) {
         // Platzsparmodus: die Wertespalte zeigt abwechselnd Wert und Richtung
@@ -1067,6 +1087,7 @@ const LABELS = {
     frame_width: "Frame width (px, 0 = no frame)",
     sort: "Lowest level first",
     warn_below: "Warning blinks below … % (0 = off)",
+    warn_mode: "When to warn",
     show_last_changed: "Show last changed",
     deadband: "Charge-flow threshold (empty = card default)",
     auto: "Collect batteries automatically",
@@ -1148,6 +1169,7 @@ const LABELS = {
     frame_width: "Rahmenstärke (px, 0 = kein Rahmen)",
     sort: "Niedrigster Stand zuerst",
     warn_below: "Warnung blinkt unter … % (0 = aus)",
+    warn_mode: "Wann gewarnt wird",
     show_last_changed: "Letzte Änderung anzeigen",
     deadband: "Ladefluss-Schwelle (leer = Karten-Standard)",
     auto: "Batterien automatisch einsammeln",
@@ -1216,6 +1238,9 @@ export const labelFor = (schema, generic, labels = LABELS.en, generic_labels = G
 // separat von LABELS, weil das keine Feldnamen sind, sondern Werte innerhalb eines Felds.
 const OPTION_LABELS = {
   en: {
+    warn_mode_level: "Below the warning threshold",
+    warn_mode_reserve: "When the reserve is reached",
+    warn_mode_both: "Both",
     animation_none: "Off",
     animation_blink: "Blink — leading segment, on flow",
     animation_blink_always: "Blink — leading segment, always",
@@ -1237,6 +1262,9 @@ const OPTION_LABELS = {
     color_mode_segment: "Each segment by its own threshold",
   },
   de: {
+    warn_mode_level: "Unter der Warnschwelle",
+    warn_mode_reserve: "Bei Erreichen der Reserve",
+    warn_mode_both: "Beides",
     animation_none: "Aus",
     animation_blink: "Blinken — führendes Segment, bei Fluss",
     animation_blink_always: "Blinken — führendes Segment, immer",
@@ -1317,6 +1345,19 @@ const tailSchema = (generic, lang = "en") => {
       { name: "state_width", selector: { text: {} } },
       { name: "precision", selector: num(0, 5) },
       { name: "warn_below", selector: num(0, 100) },
+      {
+        name: "warn_mode",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "level", label: O.warn_mode_level },
+              { value: "reserve", label: O.warn_mode_reserve },
+              { value: "both", label: O.warn_mode_both },
+            ],
+          },
+        },
+      },
       { name: "show_icon", selector: { boolean: {} } },
       { name: "show_name", selector: { boolean: {} } },
       { name: "show_state", selector: { boolean: {} } },

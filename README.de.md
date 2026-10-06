@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.15.0** — der Editor schreibt `type` nach oben und `entities` nach unten
+**v4.16.0** — `warn_mode`: Warnung unter einer Schwelle, bei Erreichen der Reserve, oder beides
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -110,6 +110,7 @@ entities:
 | `color_state` | bool | `true` | Wert rechts in der Richtungsfarbe, sobald ein Fluss erkannt ist |
 | `color_mode` | `level` \| `segment` | `level` | `level`: der ganze Balken trägt die Farbe der aktuellen Stufe. `segment`: jedes Segment hat seine eigene Farbe nach der Schwelle, die es abdeckt — die Rampe läuft dann von links nach rechts durch |
 | `warn_below` | 0–100 | `0` | Unter diesem Stand pulsiert der Balken und der Wert wird fett gesetzt, `0` = aus. Die **Farbe** des Werts bleibt dem Ladefluss vorbehalten, damit sich beide nicht widersprechen |
+| `warn_mode` | `level` \| `reserve` \| `both` | `level` | Wann die Zeile warnt. `level`: unter `warn_below`, eine Vorwarnung mit Handlungsspielraum. `reserve`: erst bei Erreichen der Reserve, wenn nichts mehr abrufbar ist — eher Status als Warnung; ohne gesetzte Reserve gilt wieder `warn_below`. `both`: beides |
 | `show_last_changed` | bool | `false` | „vor 3 Stunden" neben dem Namen — entlarvt tote Sensoren |
 | `deadband` | number | `1` | Ladefluss-Schwelle (Standard für alle Zeilen), in der Einheit der Leistungssensoren |
 | `auto` | bool | `false` | Alle `device_class: battery`-Entitäten einsammeln |

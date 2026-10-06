@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.15.0** — the editor writes `type` at the top and `entities` at the bottom
+**v4.16.0** — `warn_mode`: warn below a threshold, on reaching the reserve, or both
 
 Two Lovelace cards, one file, one resource:
 
@@ -109,6 +109,7 @@ entities:
 | `color_state` | bool | `true` | value on the right in the direction color, as soon as a flow is detected |
 | `color_mode` | `level` \| `segment` | `level` | `level`: the whole bar carries the color of the current level. `segment`: each segment has its own color by the threshold it covers — the ramp then runs left to right |
 | `warn_below` | 0–100 | `0` | below this level the bar pulses and the value is set in bold, `0` = off. The **colour** of the value stays reserved for the charge direction, so the two never contradict each other |
+| `warn_mode` | `level` \| `reserve` \| `both` | `level` | When the row warns. `level`: below `warn_below`, an early warning with room to act. `reserve`: only once the reserve is reached, so nothing usable is left — a status rather than a warning; without a reserve it falls back to `warn_below`. `both`: either of them |
 | `show_last_changed` | bool | `false` | "3 hours ago" next to the name — exposes dead sensors |
 | `deadband` | number | `1` | charge-flow threshold (default for all rows), in the unit of the power sensors |
 | `auto` | bool | `false` | collect all `device_class: battery` entities |
