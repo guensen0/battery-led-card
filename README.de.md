@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v5.0.0** — dritte Karte: `custom:led-flow-card`, zwei Werte je Zeile aus der Mitte heraus
+**v5.1.0** — die Flow-Karte zeigt den Wert dort, wo der Balken ist, und hat keinen Pluspol
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -402,8 +402,12 @@ entities:
 Vorzeichen spielen keine Rolle — ein Einspeisesensor mit `-800` füllt die linke Seite bis 800.
 Beide Seiten teilen sich Segmente, Farben, Schwellen und `invert_levels`.
 
+Der Wert steht auf der Seite, die gerade ausschlägt — er kommt also aus derjenigen der beiden
+Entitäten, die tatsächlich etwas tut; eine Seite auf Null bleibt leer, statt eine `0`
+hinzuschreiben, die nichts aussagt. Mit `show_state: false` bleiben beide leer.
+
 Nicht vorhanden, weil sie hier nichts aussagen würden: Ladefluss-Pfeil, Animationen, Reserve,
-Peak-Hold und die Warnung. Die Seite, auf der ein Balken wächst, **ist** die Richtung.
+Peak-Hold, die Warnung und der Pluspol — zwei Hälften mit Mittelstrich haben keinen. Die Seite, auf der ein Balken wächst, **ist** die Richtung.
 
 ## Testsensoren
 

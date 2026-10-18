@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v5.0.0** — a third card: `custom:led-flow-card`, two values per row growing outward
+**v5.1.0** — the flow card shows its value where the bar is, and has no terminal
 
 Two Lovelace cards, one file, one resource:
 
@@ -400,8 +400,13 @@ entities:
 Signs are ignored — a feed-in sensor reporting `-800` fills the left side to 800. Both sides
 share segments, colours, thresholds and `invert_levels`.
 
+The value is printed on the side that is deflecting, so it comes from whichever of the two
+entities is actually doing something; a side at zero stays blank instead of showing a `0` that
+says nothing. With `show_state: false` both stay empty.
+
 Not available here, because there is nothing for them to say: the flow arrow, the animations,
-reserve, peak hold and the warning. The side a bar grows to **is** the direction.
+reserve, peak hold, the warning and the positive terminal — two halves with a divider in the
+middle have no terminal. The side a bar grows to **is** the direction.
 
 ## Test sensors
 

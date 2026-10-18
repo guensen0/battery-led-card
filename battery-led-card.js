@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "5.0.0";
+export const VERSION = "5.1.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -1040,8 +1040,16 @@ export class BatteryLedCard extends Base {
     malen(segs, rechts);
     if (segsLeft) malen(segsLeft, links);
 
-    if (pct) pct.textContent = this._sideText(rechts.st, item, c, locale);
-    if (pctLeft) pctLeft.textContent = this._sideText(links.st, item, c, locale);
+    // Der Wert steht dort, wo der Balken ausschlägt. Die ruhende Seite bleibt leer, statt
+    // eine Null zu zeigen, die nichts aussagt.
+    const text = (seite) => {
+      if (!seite.st) return "";
+      const v = Number(seite.st.state);
+      if (!Number.isFinite(v)) return LABELS[pickLang(this._hass?.language)].na;
+      return Math.abs(v) > 0 ? this._sideText(seite.st, item, c, locale) : "";
+    };
+    if (pct) pct.textContent = text(rechts);
+    if (pctLeft) pctLeft.textContent = text(links);
   }
 
   /** Rohwert einer Seite mit Einheit — Vorzeichen weg, die Seite sagt die Richtung. */
@@ -1495,7 +1503,7 @@ const BASE_SCHEMA = [{ name: "title", selector: { text: {} } }];
  * ausgeblendet statt ausgegraut — ha-form kennt kein "deaktiviert", und ein Feld, das
  * folgenlos bleibt, verwirrt mehr als es nützt. Rein rechnerisch, damit es testbar ist.
  */
-export const fieldVisible = (name, c = {}, generic = false) => {
+export const fieldVisible = (name, c = {}, generic = false, split = false) => {
   const anim = c.animation ?? "none";
   const wave = ["pulse", "fill", "fill_blink"].includes(anim);
   const hasReserve = String(c.reserve ?? "").trim() !== ""
@@ -1508,7 +1516,8 @@ export const fieldVisible = (name, c = {}, generic = false) => {
     case "flow_style":
     case "animate_flow":
     case "flow_full_scale": return c.show_flow !== false;
-    case "cap_size": return c.cap !== false;
+    case "cap":                      // zwei Hälften mit Mittelstrich haben keinen Pluspol
+    case "cap_size": return !split && c.cap !== false;
     case "peak_hold": return !!c.peak;
     case "pulse_travel":
     case "pulse_period":
@@ -1526,10 +1535,10 @@ export const fieldVisible = (name, c = {}, generic = false) => {
 };
 
 /** Felder rekursiv aussieben — Gruppen und Raster können Felder enthalten. */
-const prune = (fields, config, generic) =>
+const prune = (fields, config, generic, split = false) =>
   fields
-    .map((f) => (f.schema ? { ...f, schema: prune(f.schema, config, generic) } : f))
-    .filter((f) => (f.schema ? f.schema.length : fieldVisible(f.name, config, generic)));
+    .map((f) => (f.schema ? { ...f, schema: prune(f.schema, config, generic, split) } : f))
+    .filter((f) => (f.schema ? f.schema.length : fieldVisible(f.name, config, generic, split)));
 
 const select = (name, options) => ({
   name,
@@ -1539,7 +1548,7 @@ const select = (name, options) => ({
 const tailSchema = (generic, lang = "en", config = {}, split = false) => {
   const O = OPTION_LABELS[lang];
   const L = LABELS[lang];
-  const keep = (fields) => prune(fields, config, generic);
+  const keep = (fields) => prune(fields, config, generic, split);
   // Eine Gruppe ohne Namen reicht die Daten unverändert durch — die Config bleibt flach
   const group = (title, fields, extra = []) => {
     const visible = keep(fields);
@@ -1680,7 +1689,7 @@ const COLOR_KEYS = [
  * plus ein leerer Block am Ende zum Anhängen.
  */
 const itemsSchema = (entities, hass, generic, lang = "en", config = {}, split = false) => {
-  const fields = prune(itemFields(generic, split), config, generic);
+  const fields = prune(itemFields(generic, split), config, generic, split);
   return {
     type: "expandable",
     name: "items",
