@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "5.1.0";
+export const VERSION = "5.2.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -245,6 +245,9 @@ export const batteryLevel = (st) => {
   return null;
 };
 
+/** Erkennt eine Jinja-Vorlage — alles andere wird unverändert als Symbolname benutzt. */
+export const isTemplate = (v) => typeof v === "string" && (v.includes("{{") || v.includes("{%"));
+
 /**
  * Füllstand einer Seite der Flow-Karte in Prozent. Beide Seiten wachsen aus der Mitte,
  * die linke ist nur gespiegelt dargestellt — gerechnet wird sie wie die rechte.
@@ -484,7 +487,6 @@ const CSS = `
   .half.left { flex-direction: row-reverse; border-radius: 4px 0 0 4px; }
   .half.right { border-radius: 0 4px 4px 0; }
   .mid { flex: 0 0 2px; align-self: stretch; }
-  .pct.left { text-align: left; }
   .seg { flex: 1 1 0; min-width: 1px; border-radius: 1px;
          transition: background .3s, box-shadow .3s; }
   .chev { flex: 0 0 18px; display: flex; justify-content: center; --mdc-icon-size: 18px; }
@@ -622,6 +624,7 @@ export class BatteryLedCard extends Base {
     this._key = null;
     this._rows = null;
     this._trend = new Map();
+    this._tpl = this._tpl ?? new Map();
     this._peak = new Map();
     this.innerHTML = "";
   }
@@ -673,6 +676,7 @@ export class BatteryLedCard extends Base {
   }
 
   _rebuild(items, key) {
+    this._dropTemplates();          // Zeilen weg, Abos auch
     this._key = key;
     this.innerHTML = "";
     this._build(items);
@@ -710,7 +714,43 @@ export class BatteryLedCard extends Base {
     if (this._rows && this._hass) this._update();
   }
 
+  /**
+   * Vorlagen rendert Home Assistant, nicht die Karte: ein Abo je Vorlage, das bei jeder
+   * Änderung der darin verwendeten Entitäten ein neues Ergebnis schickt. Bis zur ersten
+   * Antwort gilt der Wert als leer.
+   */
+  _template(tpl) {
+    if (!isTemplate(tpl)) return tpl;
+    let eintrag = this._tpl.get(tpl);
+    if (!eintrag) {
+      eintrag = { wert: undefined, unsub: null };
+      this._tpl.set(tpl, eintrag);
+      this._hass?.connection?.subscribeMessage?.(
+        (msg) => {
+          if (eintrag.wert === msg.result) return;      // sonst rendert sich die Karte im Kreis
+          eintrag.wert = msg.result;
+          if (this._rows && this._hass) this._update();
+        },
+        { type: "render_template", template: tpl, report_errors: false },
+      ).then((u) => {
+        // War die Karte schneller weg als die Zusage da, direkt wieder kündigen
+        if (eintrag.weg) u?.();
+        else eintrag.unsub = u;
+      }).catch(() => { eintrag.wert = ""; });
+    }
+    return eintrag.wert;
+  }
+
+  _dropTemplates() {
+    for (const eintrag of this._tpl.values()) {
+      eintrag.weg = true;
+      eintrag.unsub?.();
+    }
+    this._tpl.clear();
+  }
+
   disconnectedCallback() {
+    this._dropTemplates();
     clearTimeout(this._timer);
     clearInterval(this._alt);
     this._timer = null;
@@ -779,7 +819,6 @@ export class BatteryLedCard extends Base {
       row.innerHTML = this._split
         ? `${c.show_icon ? '<ha-state-icon class="icon"></ha-state-icon>' : ""}
           ${c.show_name ? '<div class="name"></div>' : ""}
-          ${c.show_state ? '<div class="pct left"></div>' : ""}
           <div class="batt">
             <div class="half left"></div><div class="mid"></div><div class="half right"></div>
           </div>
@@ -824,8 +863,6 @@ export class BatteryLedCard extends Base {
       });
       const segs = bauSegmente(koerper[this._split ? 1 : 0]);
       const segsLeft = this._split ? bauSegmente(koerper[0]) : null;
-      const pctLeftEl = row.querySelector(".pct.left");
-      if (pctLeftEl) pctLeftEl.style.flex = nameFlex(c.state_width, DEFAULT_STATE_WIDTH);
       row.addEventListener("click", () => {
         const ev = new Event("hass-more-info", { bubbles: true, composed: true });
         ev.detail = { entityId: item.entity };
@@ -833,7 +870,7 @@ export class BatteryLedCard extends Base {
       });
       grid.appendChild(row);
       return {
-        item, row, segs, segsLeft, pctLeft: pctLeftEl,
+        item, row, segs, segsLeft,
         icon: row.querySelector(".icon"),
         name: row.querySelector(".name"),
         pct: row.querySelector(".pct"),
@@ -884,7 +921,7 @@ export class BatteryLedCard extends Base {
         // ha-state-icon kennt die Zustandslogik (Batteriestand, device_class) schon
         icon.hass = this._hass;
         icon.stateObj = st;
-        icon.icon = item.icon || undefined;
+        icon.icon = this._template(item.icon) || undefined;
       }
       if (name) name.textContent = item.name ?? st?.attributes?.friendly_name ?? item.entity;
       row.classList.toggle("dead", lvl === null);
@@ -1003,7 +1040,7 @@ export class BatteryLedCard extends Base {
    * Eine Zeile der Flow-Karte: zwei Entitäten, zwei Hälften, aus der Mitte nach außen.
    * Die linke Hälfte ist per CSS gespiegelt (row-reverse), gerechnet wird sie wie die rechte.
    */
-  _splitRow({ item, row, segs, segsLeft, icon, name, pct, pctLeft }, c, off, locale) {
+  _splitRow({ item, row, segs, segsLeft, icon, name, pct }, c, off, locale) {
     const states = this._hass.states;
     const seite = (id, max) => {
       const st = states[id];
@@ -1015,7 +1052,7 @@ export class BatteryLedCard extends Base {
     if (icon) {
       icon.hass = this._hass;
       icon.stateObj = rechts.st ?? links.st;
-      icon.icon = item.icon || undefined;
+      icon.icon = this._template(item.icon) || undefined;
     }
     if (name) {
       name.textContent = item.name
@@ -1040,26 +1077,28 @@ export class BatteryLedCard extends Base {
     malen(segs, rechts);
     if (segsLeft) malen(segsLeft, links);
 
-    // Der Wert steht dort, wo der Balken ausschlägt. Die ruhende Seite bleibt leer, statt
-    // eine Null zu zeigen, die nichts aussagt.
-    const text = (seite) => {
-      if (!seite.st) return "";
-      const v = Number(seite.st.state);
-      if (!Number.isFinite(v)) return LABELS[pickLang(this._hass?.language)].na;
-      return Math.abs(v) > 0 ? this._sideText(seite.st, item, c, locale) : "";
-    };
-    if (pct) pct.textContent = text(rechts);
-    if (pctLeft) pctLeft.textContent = text(links);
+    // Eine Zahl für beide Seiten: das Vorzeichen sagt, wohin der Balken zeigt.
+    if (pct) pct.textContent = this._sideText(rechts, links, item, c, locale);
   }
 
-  /** Rohwert einer Seite mit Einheit — Vorzeichen weg, die Seite sagt die Richtung. */
-  _sideText(st, item, c, locale) {
-    if (!st || !Number.isFinite(Number(st.state))) {
-      return LABELS[pickLang(this._hass?.language)].na;
-    }
-    const v = formatValue(Math.abs(Number(st.state)), item.precision ?? c.precision, locale);
-    const unit = unitFor(item.unit ?? c.unit, st, true);
-    return unit === "%" ? `${v}%` : unit ? `${v} ${unit}` : v;
+  /**
+   * Eine Zahl für beide Seiten: es gewinnt die Seite mit dem größeren Betrag, und ein Minus
+   * zeigt nach links. Kennt keine Seite einen Wert, steht dort "n/a".
+   */
+  _sideText(rechts, links, item, c, locale) {
+    const zahl = (seite) => {
+      const v = Number(seite.st?.state);
+      return Number.isFinite(v) ? Math.abs(v) : null;
+    };
+    const r = zahl(rechts), l = zahl(links);
+    if (r === null && l === null) return LABELS[pickLang(this._hass?.language)].na;
+    const linksGewinnt = (l ?? -1) > (r ?? -1);
+    const seite = linksGewinnt ? links : rechts;
+    const betrag = (linksGewinnt ? l : r) ?? 0;
+    const v = formatValue(betrag, item.precision ?? c.precision, locale);
+    const unit = unitFor(item.unit ?? c.unit, seite.st, true);
+    const mit = linksGewinnt && betrag > 0 ? `−${v}` : v;
+    return unit === "%" ? `${mit}%` : unit ? `${mit} ${unit}` : mit;
   }
 
   /** Prozent bei Batterien, sonst der Rohwert mit seiner Einheit. */

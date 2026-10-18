@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v5.1.0** — the flow card shows its value where the bar is, and has no terminal
+**v5.2.0** — one signed number on the flow card, and `icon` accepts a template
 
 Two Lovelace cards, one file, one resource:
 
@@ -310,6 +310,22 @@ colors:
   body: transparent
 ```
 
+### Icons from a template
+
+`icon` takes a Jinja template as well as a fixed name:
+
+```yaml
+entities:
+  - entity: sensor.lg_soc
+    icon: >-
+      {{ 'mdi:battery-charging' if states('sensor.lg_ladefluss')|float(0) > 0
+         else 'mdi:battery' }}
+```
+
+Home Assistant renders it and pushes a new result whenever an entity used inside changes, so
+the icon follows along without the card polling anything. Until the first result arrives the
+icon stays empty; a value without `{{` or `{%` is used as the icon name unchanged.
+
 ### Determining the value
 
 numeric state → `battery_level` attribute → `binary_sensor` (`on` = empty, `off` = full)
@@ -400,9 +416,9 @@ entities:
 Signs are ignored — a feed-in sensor reporting `-800` fills the left side to 800. Both sides
 share segments, colours, thresholds and `invert_levels`.
 
-The value is printed on the side that is deflecting, so it comes from whichever of the two
-entities is actually doing something; a side at zero stays blank instead of showing a `0` that
-says nothing. With `show_state: false` both stay empty.
+There is **one** number for both sides: the larger of the two wins and a minus sign points
+left. `1200 W` means import, `−800 W` means export — so the reading comes from whichever of the
+two entities is doing something, without a second figure sitting next to it at zero.
 
 Not available here, because there is nothing for them to say: the flow arrow, the animations,
 reserve, peak hold, the warning and the positive terminal — two halves with a divider in the

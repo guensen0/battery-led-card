@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v5.1.0** — die Flow-Karte zeigt den Wert dort, wo der Balken ist, und hat keinen Pluspol
+**v5.2.0** — eine Zahl mit Vorzeichen auf der Flow-Karte, und `icon` nimmt Vorlagen
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -312,6 +312,22 @@ colors:
   body: transparent
 ```
 
+### Symbole aus einer Vorlage
+
+`icon` nimmt neben einem festen Namen auch eine Jinja-Vorlage:
+
+```yaml
+entities:
+  - entity: sensor.lg_soc
+    icon: >-
+      {{ 'mdi:battery-charging' if states('sensor.lg_ladefluss')|float(0) > 0
+         else 'mdi:battery' }}
+```
+
+Home Assistant rendert sie und schickt ein neues Ergebnis, sobald sich eine darin verwendete
+Entität ändert — die Karte fragt also nichts ab. Bis zur ersten Antwort bleibt das Symbol leer;
+ein Wert ohne `{{` oder `{%` wird unverändert als Symbolname benutzt.
+
 ### Wertermittlung
 
 numerischer State → Attribut `battery_level` → `binary_sensor` (`on` = leer, `off` = voll)
@@ -402,9 +418,9 @@ entities:
 Vorzeichen spielen keine Rolle — ein Einspeisesensor mit `-800` füllt die linke Seite bis 800.
 Beide Seiten teilen sich Segmente, Farben, Schwellen und `invert_levels`.
 
-Der Wert steht auf der Seite, die gerade ausschlägt — er kommt also aus derjenigen der beiden
-Entitäten, die tatsächlich etwas tut; eine Seite auf Null bleibt leer, statt eine `0`
-hinzuschreiben, die nichts aussagt. Mit `show_state: false` bleiben beide leer.
+Angezeigt wird **eine** Zahl für beide Seiten: der größere der beiden Beträge gewinnt, und ein
+Minus zeigt nach links. `1200 W` heißt Bezug, `−800 W` heißt Einspeisung — der Wert kommt also
+aus derjenigen Entität, die gerade etwas tut, ohne dass eine zweite Zahl bei null danebensteht.
 
 Nicht vorhanden, weil sie hier nichts aussagen würden: Ladefluss-Pfeil, Animationen, Reserve,
 Peak-Hold, die Warnung und der Pluspol — zwei Hälften mit Mittelstrich haben keinen. Die Seite, auf der ein Balken wächst, **ist** die Richtung.
