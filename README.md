@@ -190,6 +190,25 @@ colors:
 
 The placeholders in the color editor always show the values of the selected preset.
 
+### `invert_levels` or `preset: invers`?
+
+They overlap and cancel each other out, so pick one:
+
+| | recolours | turns the thresholds | turns `warn_below` |
+|---|---|---|---|
+| `preset: invers` | yes, blue → red instead of red → green | no | no |
+| `invert_levels` | yes, through the thresholds | yes | yes |
+
+`preset: invers` is a palette. A waste-water tank at 95 % would look red with it, but
+`warn_below: 20` would still fire at the empty end — right picture, wrong warning. That gap is
+what `invert_levels` closes, and it is the one to use when high really means bad.
+
+`invers` earns its place where nothing should be turned: a temperature, blue at the bottom and
+red at the top, without "cold" counting as a warning.
+
+Setting both turns the scale back: with `invert_levels` **and** `preset: invers`, 95 % comes
+out blue and 5 % red.
+
 ### Housing (`surface`)
 
 | Value | Body | Unlit | Frame |

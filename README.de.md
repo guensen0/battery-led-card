@@ -192,6 +192,25 @@ colors:
 
 Die Platzhalter im Farbeditor zeigen immer die Werte der gewählten Voreinstellung.
 
+### `invert_levels` oder `preset: invers`?
+
+Die beiden überlappen sich und heben einander auf — nimm eins davon:
+
+| | färbt um | kippt die Schwellen | kippt `warn_below` |
+|---|---|---|---|
+| `preset: invers` | ja, blau → rot statt rot → grün | nein | nein |
+| `invert_levels` | ja, über die Schwellen | ja | ja |
+
+`preset: invers` ist eine Palette. Ein Abwassertank bei 95 % wäre damit zwar rot, aber
+`warn_below: 20` schlüge weiter am leeren Ende an — richtiges Bild, falsche Warnung. Genau die
+Lücke schließt `invert_levels`, und das ist die Wahl, wenn hoch wirklich schlecht bedeutet.
+
+`invers` hat seinen Platz dort, wo nichts gekippt werden soll: eine Temperatur, unten blau und
+oben rot, ohne dass „kalt" als Warnung zählt.
+
+Beides zusammen dreht die Skala zurück: mit `invert_levels` **und** `preset: invers` kommt bei
+95 % blau heraus und bei 5 % rot.
+
 ### Gehäuse (`surface`)
 
 | Wert | Körper | Unbeleuchtet | Rahmen |
