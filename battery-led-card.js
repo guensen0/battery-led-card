@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.20.0";
+export const VERSION = "5.0.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -246,6 +246,18 @@ export const batteryLevel = (st) => {
 };
 
 /**
+ * Füllstand einer Seite der Flow-Karte in Prozent. Beide Seiten wachsen aus der Mitte,
+ * die linke ist nur gespiegelt dargestellt — gerechnet wird sie wie die rechte.
+ */
+export const sideLevel = (st, min, max) => {
+  if (!st) return null;
+  const v = Number(st.state);
+  if (!Number.isFinite(v)) return null;
+  if (max === min) return null;
+  return ((Math.abs(v) - min) / (max - min)) * 100;
+};
+
+/**
  * Spiegelt den Stand für die Farbwahl, wenn hohe Werte das Schlechte sind: aus 90 wird 10,
  * damit ein voller Abwassertank rot ist und ein leerer grün. Betrifft Farben, Warnung und
  * Segmentrampe gemeinsam — die Aussage "unten ist schlecht" dreht sich komplett um.
@@ -467,6 +479,12 @@ const CSS = `
   .body { flex: 1 1 auto; display: flex; gap: 2px; padding: 2px; border-radius: 4px;
           border-style: solid; min-width: 0; }
   .cap { margin-left: 1px; border-radius: 0 3px 3px 0; }
+  .half { flex: 1 1 0; display: flex; gap: 2px; padding: 2px; border-style: solid;
+          min-width: 0; }
+  .half.left { flex-direction: row-reverse; border-radius: 4px 0 0 4px; }
+  .half.right { border-radius: 0 4px 4px 0; }
+  .mid { flex: 0 0 2px; align-self: stretch; }
+  .pct.left { text-align: left; }
   .seg { flex: 1 1 0; min-width: 1px; border-radius: 1px;
          transition: background .3s, box-shadow .3s; }
   .chev { flex: 0 0 18px; display: flex; justify-content: center; --mdc-icon-size: 18px; }
@@ -578,6 +596,11 @@ export class BatteryLedCard extends Base {
   /** Der zweite Tag nutzt dieselbe Engine, nur ohne Batterie-Annahmen. */
   get _generic() {
     return this.localName === "led-gauge-card";
+  }
+
+  /** Flow-Karte: je Zeile zwei Entitäten, der Balken wächst aus der Mitte nach außen. */
+  get _split() {
+    return this.localName === "led-flow-card";
   }
 
   setConfig(config) {
@@ -753,7 +776,15 @@ export class BatteryLedCard extends Base {
     this._rows = items.map((item) => {
       const row = document.createElement("div");
       row.className = "row";
-      row.innerHTML = `${c.show_icon ? '<ha-state-icon class="icon"></ha-state-icon>' : ""}
+      row.innerHTML = this._split
+        ? `${c.show_icon ? '<ha-state-icon class="icon"></ha-state-icon>' : ""}
+          ${c.show_name ? '<div class="name"></div>' : ""}
+          ${c.show_state ? '<div class="pct left"></div>' : ""}
+          <div class="batt">
+            <div class="half left"></div><div class="mid"></div><div class="half right"></div>
+          </div>
+          ${c.show_state ? '<div class="pct"></div>' : ""}`
+        : `${c.show_icon ? '<ha-state-icon class="icon"></ha-state-icon>' : ""}
         ${c.show_name ? '<div class="name"></div>' : ""}
         ${c.show_last_changed ? '<div class="time"></div>' : ""}
         <div class="batt"><div class="body"></div>${c.cap ? '<div class="cap"></div>' : ""}</div>
@@ -761,11 +792,18 @@ export class BatteryLedCard extends Base {
           ? '<div class="chev"><ha-icon></ha-icon></div>' : ""}
         ${c.show_state ? '<div class="pct"></div>' : ""}`;
       row.style.gap = `${c.row_gap}px`;
-      const body = row.querySelector(".body");
-      body.style.height = `${c.bar_height}px`;
-      body.style.background = toCss(c.colors.body ?? BODY);
-      body.style.borderColor = toCss(c.colors.frame ?? FRAME);
-      body.style.borderWidth = `${c.frame_width}px`;
+      // Gehäuse: ein Balken, bei der Flow-Karte zwei Hälften mit Mittelstrich
+      const koerper = this._split
+        ? [row.querySelector(".half.left"), row.querySelector(".half.right")]
+        : [row.querySelector(".body")];
+      for (const body of koerper) {
+        body.style.height = `${c.bar_height}px`;
+        body.style.background = toCss(c.colors.body ?? BODY);
+        body.style.borderColor = toCss(c.colors.frame ?? FRAME);
+        body.style.borderWidth = `${c.frame_width}px`;
+      }
+      const mid = row.querySelector(".mid");
+      if (mid) mid.style.background = toCss(c.colors.frame ?? FRAME);
       const capEl = row.querySelector(".cap");
       if (capEl) {
         // wächst mit dem Gehäuse mit, sonst verschwindet er bei hohen Balken
@@ -778,12 +816,16 @@ export class BatteryLedCard extends Base {
       if (nameEl) nameEl.style.flex = nameFlex(c.name_width);
       const pctEl = row.querySelector(".pct");
       if (pctEl) pctEl.style.flex = nameFlex(c.state_width, DEFAULT_STATE_WIDTH);
-      const segs = Array.from({ length: c.segments }, () => {
+      const bauSegmente = (body) => Array.from({ length: c.segments }, () => {
         const s = document.createElement("div");
         s.className = "seg";
         body.appendChild(s);
         return s;
       });
+      const segs = bauSegmente(koerper[this._split ? 1 : 0]);
+      const segsLeft = this._split ? bauSegmente(koerper[0]) : null;
+      const pctLeftEl = row.querySelector(".pct.left");
+      if (pctLeftEl) pctLeftEl.style.flex = nameFlex(c.state_width, DEFAULT_STATE_WIDTH);
       row.addEventListener("click", () => {
         const ev = new Event("hass-more-info", { bubbles: true, composed: true });
         ev.detail = { entityId: item.entity };
@@ -791,7 +833,7 @@ export class BatteryLedCard extends Base {
       });
       grid.appendChild(row);
       return {
-        item, row, segs,
+        item, row, segs, segsLeft, pctLeft: pctLeftEl,
         icon: row.querySelector(".icon"),
         name: row.querySelector(".name"),
         pct: row.querySelector(".pct"),
@@ -818,7 +860,9 @@ export class BatteryLedCard extends Base {
       data.sort((a, b) => (a.lvl ?? 999) - (b.lvl ?? 999));
       data.forEach((d) => d.row.parentNode.appendChild(d.row));
     }
-    for (const { item, row, segs, icon, name, pct, time, chev, st, lvl } of data) {
+    for (const r of data) {
+      if (this._split) { this._splitRow(r, c, off, locale); continue; }
+      const { item, row, segs, icon, name, pct, time, chev, st, lvl } = r;
       // Richtung wird immer berechnet — sie steuert auch das Pulsieren, das unabhängig
       // davon ist, ob ein Pfeil angezeigt wird.
       const flow = this._flow(item, lvl, c);
@@ -953,6 +997,61 @@ export class BatteryLedCard extends Base {
       });
     }
     this._fitAuto();
+  }
+
+  /**
+   * Eine Zeile der Flow-Karte: zwei Entitäten, zwei Hälften, aus der Mitte nach außen.
+   * Die linke Hälfte ist per CSS gespiegelt (row-reverse), gerechnet wird sie wie die rechte.
+   */
+  _splitRow({ item, row, segs, segsLeft, icon, name, pct, pctLeft }, c, off, locale) {
+    const states = this._hass.states;
+    const seite = (id, max) => {
+      const st = states[id];
+      return { st, lvl: sideLevel(st, item.min ?? c.min ?? 0, max) };
+    };
+    const rechts = seite(item.entity, item.max ?? c.max);
+    const links = seite(item.entity_left, item.max_left ?? item.max ?? c.max);
+
+    if (icon) {
+      icon.hass = this._hass;
+      icon.stateObj = rechts.st ?? links.st;
+      icon.icon = item.icon || undefined;
+    }
+    if (name) {
+      name.textContent = item.name
+        ?? rechts.st?.attributes?.friendly_name ?? item.entity ?? item.entity_left ?? "";
+    }
+    row.classList.toggle("dead", rechts.lvl === null && links.lvl === null);
+
+    const malen = (liste, { lvl }) => {
+      const on = lvl === null ? 0 : filledSegments(lvl, c.segments);
+      const farbe = lvl === null
+        ? "var(--disabled-text-color, #555)"
+        : levelColor(invertLevel(lvl, c.invert_levels), c.colors, c.thresholds);
+      liste.forEach((seg, i) => {
+        const col = this._segColors
+          ? this._segColors[c.invert_levels ? c.segments - 1 - i : i]
+          : farbe;
+        const lit = i < on;
+        seg.style.background = lit ? col : off;
+        seg.style.boxShadow = lit ? `0 0 5px ${col}` : "none";
+      });
+    };
+    malen(segs, rechts);
+    if (segsLeft) malen(segsLeft, links);
+
+    if (pct) pct.textContent = this._sideText(rechts.st, item, c, locale);
+    if (pctLeft) pctLeft.textContent = this._sideText(links.st, item, c, locale);
+  }
+
+  /** Rohwert einer Seite mit Einheit — Vorzeichen weg, die Seite sagt die Richtung. */
+  _sideText(st, item, c, locale) {
+    if (!st || !Number.isFinite(Number(st.state))) {
+      return LABELS[pickLang(this._hass?.language)].na;
+    }
+    const v = formatValue(Math.abs(Number(st.state)), item.precision ?? c.precision, locale);
+    const unit = unitFor(item.unit ?? c.unit, st, true);
+    return unit === "%" ? `${v}%` : unit ? `${v} ${unit}` : v;
   }
 
   /** Prozent bei Batterien, sonst der Rohwert mit seiner Einheit. */
@@ -1105,6 +1204,8 @@ const LABELS = {
     trend_full_scale: "Full speed at … %/min",
     invert_levels: "High values are bad (mirror the colours)",
     rise_is_bad: "A rise is bad (swap the direction colours)",
+    entity_left: "Entity on the left (empty = remove)",
+    max_left: "Maximum on the left (empty = same as on the right)",
     cap: "Show positive terminal",
     cap_size: "Terminal size (px)",
     frame_width: "Frame width (px, 0 = no frame)",
@@ -1145,6 +1246,7 @@ const LABELS = {
     collect_none: "nothing new found",
     stub_title_battery: "Batteries",
     stub_title_generic: "Values",
+    stub_title_flow: "Flow",
     na: "n/a",
   },
   de: {
@@ -1189,6 +1291,8 @@ const LABELS = {
     trend_full_scale: "Volles Tempo bei … %/min",
     invert_levels: "Hohe Werte sind schlecht (Farben spiegeln)",
     rise_is_bad: "Anstieg ist schlecht (Richtungsfarben tauschen)",
+    entity_left: "Entität links (leeren = entfernen)",
+    max_left: "Maximum links (leer = wie rechts)",
     cap: "Pluspol anzeigen",
     cap_size: "Pluspol-Größe (px)",
     frame_width: "Rahmenstärke (px, 0 = kein Rahmen)",
@@ -1229,6 +1333,7 @@ const LABELS = {
     collect_none: "nichts Neues gefunden",
     stub_title_battery: "Batterien",
     stub_title_generic: "Werte",
+    stub_title_flow: "Fluss",
     na: "n/v",
   },
 };
@@ -1338,8 +1443,21 @@ const VALUE_DOMAINS = [{
 
 // Ladefluss-Sensoren gibt es nur bei Batterien (Hausspeicher); die Gauge-Karte leitet ihren
 // Pfeil aus dem Verlauf des Werts ab und braucht die Felder nicht.
-const itemFields = (generic) =>
-  generic
+const itemFields = (generic, split = false) =>
+  split
+    ? [
+        { name: "entity", selector: ent(VALUE_DOMAINS) },
+        { name: "entity_left", selector: ent(VALUE_DOMAINS) },
+        { name: "name", selector: { text: {} } },
+        { name: "icon", selector: { icon: {} } },
+        { type: "grid", schema: [
+          { name: "max", selector: num(-1000000, 1000000, 0.01) },
+          { name: "max_left", selector: num(-1000000, 1000000, 0.01) },
+          { name: "precision", selector: num(0, 5) },
+        ] },
+        { name: "unit", selector: { text: {} } },
+      ]
+    : generic
     ? [
         { name: "entity", selector: ent(VALUE_DOMAINS) },
         { name: "name", selector: { text: {} } },
@@ -1418,7 +1536,7 @@ const select = (name, options) => ({
   selector: { select: { mode: "dropdown", options } },
 });
 
-const tailSchema = (generic, lang = "en", config = {}) => {
+const tailSchema = (generic, lang = "en", config = {}, split = false) => {
   const O = OPTION_LABELS[lang];
   const L = LABELS[lang];
   const keep = (fields) => prune(fields, config, generic);
@@ -1486,10 +1604,12 @@ const tailSchema = (generic, lang = "en", config = {}) => {
         type: "expandable",
         name: "colors",
         title: L.colors,
-        schema: COLOR_KEYS.map(([n]) => ({ name: n, selector: { ui_color: {} } })),
+        schema: COLOR_KEYS
+          .filter(([n]) => !(split && n === "reserve"))   // ohne Reserve keine Reservefarbe
+          .map(([n]) => ({ name: n, selector: { ui_color: {} } })),
       },
     ]),
-    ...group(O.group_flow, [
+    ...(split ? [] : group(O.group_flow, [
       { name: "show_flow", selector: { boolean: {} } },
       select("flow_style", [
         { value: "arrow", label: O.flow_style_arrow },
@@ -1501,8 +1621,8 @@ const tailSchema = (generic, lang = "en", config = {}) => {
         { name: "flow_full_scale", selector: num(1, 100000, 1) },
         { name: "deadband", selector: num(0, 10000, 0.1) },
       ]),
-    ]),
-    ...group(O.group_animation, [
+    ])),
+    ...(split ? [] : group(O.group_animation, [
       select("animation", [
         { value: "none", label: O.animation_none },
         { value: "blink", label: O.animation_blink },
@@ -1516,8 +1636,8 @@ const tailSchema = (generic, lang = "en", config = {}) => {
       { name: "pulse_width", selector: num(1, 8, 0.5) },
       { name: "blink_cycles", selector: num(1, 10) },
       { name: "blink_tip", selector: { boolean: {} } },
-    ]),
-    ...group(O.group_warn, [
+    ])),
+    ...(split ? [] : group(O.group_warn, [
       { name: "reserve", selector: { text: {} } },
       { name: "levels_above_reserve", selector: { boolean: {} } },
       { name: "warn_below", selector: num(0, 100) },
@@ -1528,7 +1648,7 @@ const tailSchema = (generic, lang = "en", config = {}) => {
       ]),
       { name: "peak", selector: { boolean: {} } },
       { name: "peak_hold", selector: num(1, 86400, 1) },
-    ]),
+    ])),
     ...(generic
       ? group(O.group_scale, [
           { name: "min", selector: num(-1000000, 1000000, 0.01) },
@@ -1559,8 +1679,8 @@ const COLOR_KEYS = [
  * Ein aufklappbarer Block je Entität — Auswahl, Name und Ladefluss an einer Stelle —
  * plus ein leerer Block am Ende zum Anhängen.
  */
-const itemsSchema = (entities, hass, generic, lang = "en", config = {}) => {
-  const fields = prune(itemFields(generic), config, generic);
+const itemsSchema = (entities, hass, generic, lang = "en", config = {}, split = false) => {
+  const fields = prune(itemFields(generic, split), config, generic);
   return {
     type: "expandable",
     name: "items",
@@ -1592,7 +1712,11 @@ export const buildEntities = (items = []) =>
 
 export class BatteryLedCardEditor extends Base {
   get _generic() {
-    return this.localName === "led-gauge-card-editor";
+    return this.localName === "led-gauge-card-editor" || this._split;
+  }
+
+  get _split() {
+    return this.localName === "led-flow-card-editor";
   }
 
   setConfig(config) {
@@ -1632,8 +1756,8 @@ export class BatteryLedCardEditor extends Base {
     this._form.hass = this._hass;
     this._form.schema = [
       ...BASE_SCHEMA,
-      itemsSchema(items, this._hass, this._generic, this._lang, this._config),
-      ...tailSchema(this._generic, this._lang, this._config),
+      itemsSchema(items, this._hass, this._generic, this._lang, this._config, this._split),
+      ...tailSchema(this._generic, this._lang, this._config, this._split),
     ];
     this._form.data = {
       ...DEFAULTS,                            // sonst stehen ungesetzte Schalter im Editor auf aus
@@ -1676,7 +1800,9 @@ export class BatteryLedCardEditor extends Base {
     const box = document.createElement("details");
     box.className = "colorbox";
     box.innerHTML = `<summary>${L.colors_custom}</summary>`;
-    this._colorRows = COLOR_KEYS.map(([key, def]) => {
+    this._colorRows = COLOR_KEYS
+      .filter(([key]) => !(this._split && key === "reserve"))
+      .map(([key, def]) => {
       const row = document.createElement("div");
       row.className = "crow";
       row.innerHTML = `<label></label><input type="color"><input type="text" spellcheck="false">`;
@@ -1762,6 +1888,15 @@ if (globalThis.customElements && !customElements.get("battery-led-card")) {
     }
   });
   customElements.define("led-gauge-card-editor", class extends BatteryLedCardEditor {});
+  customElements.define("led-flow-card", class extends BatteryLedCard {
+    static getConfigElement() {
+      return document.createElement("led-flow-card-editor");
+    }
+    static getStubConfig(hass) {
+      return { title: LABELS[pickLang(hass?.language)].stub_title_flow, entities: [] };
+    }
+  });
+  customElements.define("led-flow-card-editor", class extends BatteryLedCardEditor {});
   // Läuft einmalig beim Modul-Laden, vor jeder hass-Instanz - hass.language ist hier noch
   // nicht bekannt, daher als einmaliger Kompromiss die Browsersprache.
   const _regLang = pickLang(globalThis.navigator?.language);
@@ -1779,6 +1914,14 @@ if (globalThis.customElements && !customElements.get("battery-led-card")) {
     type: "battery-led-card",
     name: "Battery LED Card",
     description: `${_cardDesc.battery} (v${VERSION})`,
+    preview: true,
+  });
+  window.customCards.push({
+    type: "led-flow-card",
+    name: "LED Flow Card",
+    description: _regLang === "de"
+      ? `Zwei Werte je Zeile, Balken aus der Mitte nach außen (v${VERSION})`
+      : `Two values per row, bars growing outward from the middle (v${VERSION})`,
     preview: true,
   });
   window.customCards.push({

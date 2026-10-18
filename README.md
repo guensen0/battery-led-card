@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.20.0** — `rise_is_bad`: say which direction of change is the good one
+**v5.0.0** — a third card: `custom:led-flow-card`, two values per row growing outward
 
 Two Lovelace cards, one file, one resource:
 
@@ -10,6 +10,7 @@ Two Lovelace cards, one file, one resource:
 |---|---|
 | `custom:battery-led-card` | batteries — level in %, percentage display, "collect" button |
 | `custom:led-gauge-card` | any numeric value — `min`/`max` per row, raw value with unit |
+| `custom:led-flow-card` | two values per row — bars growing outward from the middle |
 
 Both share bars, colors, thresholds, charge flow and the editor; below is where they differ.
 
@@ -368,6 +369,39 @@ fails, it falls back to the old behavior: arrow only from the first change onwar
 with `trend_history: false`.
 
 (The sensor fields still work in YAML, they're just not in the editor.)
+
+## `custom:led-flow-card` — two directions
+
+One row, two entities, bars growing outward from the middle — grid import against export,
+charging against discharging, inflow against outflow. The left bar is mirrored, so both fill
+away from the centre.
+
+```yaml
+type: custom:led-flow-card
+title: Netz
+segments: 12          # per side
+color_mode: segment
+entities:
+  - name: Grid
+    entity: sensor.bezug            # right side
+    entity_left: sensor.einspeisung # left side
+    max: 2000                       # per side
+    max_left: 3000                  # optional, if the left side has another range
+    unit: auto
+```
+
+| Key | Meaning |
+|---|---|
+| `entity` | the value growing to the **right** |
+| `entity_left` | the value growing to the **left** |
+| `max` / `max_left` | full deflection per side; `min` sets the inner end, default `0` |
+| `name`, `icon`, `precision`, `unit` | as on the other cards |
+
+Signs are ignored — a feed-in sensor reporting `-800` fills the left side to 800. Both sides
+share segments, colours, thresholds and `invert_levels`.
+
+Not available here, because there is nothing for them to say: the flow arrow, the animations,
+reserve, peak hold and the warning. The side a bar grows to **is** the direction.
 
 ## Test sensors
 

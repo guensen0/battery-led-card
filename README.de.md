@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.20.0** — `rise_is_bad`: sagen, welche Änderungsrichtung die gute ist
+**v5.0.0** — dritte Karte: `custom:led-flow-card`, zwei Werte je Zeile aus der Mitte heraus
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -10,6 +10,7 @@ Zwei Lovelace-Karten, eine Datei, eine Ressource:
 |---|---|
 | `custom:battery-led-card` | Batterien — Stand in %, Prozentanzeige, Knopf zum Einsammeln |
 | `custom:led-gauge-card` | beliebige Zahlenwerte — `min`/`max` je Zeile, Rohwert mit Einheit |
+| `custom:led-flow-card` | zwei Werte je Zeile — Balken aus der Mitte nach außen |
 
 Beide teilen sich Balken, Farben, Schwellen, Ladefluss und Editor; unten steht, wo sie sich
 unterscheiden.
@@ -370,6 +371,39 @@ Aufruf, bleibt es beim alten Verhalten: Pfeil ab der ersten Änderung. Abschaltb
 `trend_history: false`.
 
 (In YAML funktionieren die Sensorfelder weiterhin, sie stehen nur nicht im Editor.)
+
+## `custom:led-flow-card` — zwei Richtungen
+
+Eine Zeile, zwei Entitäten, Balken aus der Mitte nach außen — Netzbezug gegen Einspeisung,
+Laden gegen Entladen, Zulauf gegen Ablauf. Der linke Balken ist gespiegelt, beide wachsen also
+von der Mitte weg.
+
+```yaml
+type: custom:led-flow-card
+title: Netz
+segments: 12          # je Seite
+color_mode: segment
+entities:
+  - name: Netz
+    entity: sensor.bezug            # rechte Seite
+    entity_left: sensor.einspeisung # linke Seite
+    max: 2000                       # je Seite
+    max_left: 3000                  # optional, falls links ein anderer Bereich gilt
+    unit: auto
+```
+
+| Schlüssel | Bedeutung |
+|---|---|
+| `entity` | der Wert, der nach **rechts** wächst |
+| `entity_left` | der Wert, der nach **links** wächst |
+| `max` / `max_left` | Vollausschlag je Seite; `min` setzt das innere Ende, Default `0` |
+| `name`, `icon`, `precision`, `unit` | wie auf den anderen Karten |
+
+Vorzeichen spielen keine Rolle — ein Einspeisesensor mit `-800` füllt die linke Seite bis 800.
+Beide Seiten teilen sich Segmente, Farben, Schwellen und `invert_levels`.
+
+Nicht vorhanden, weil sie hier nichts aussagen würden: Ladefluss-Pfeil, Animationen, Reserve,
+Peak-Hold und die Warnung. Die Seite, auf der ein Balken wächst, **ist** die Richtung.
 
 ## Testsensoren
 
