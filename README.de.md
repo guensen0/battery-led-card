@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.19.0** — `invert_levels`: sagen, ob ein Anstieg gut oder schlecht ist
+**v4.20.0** — `rise_is_bad`: sagen, welche Änderungsrichtung die gute ist
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -107,6 +107,7 @@ entities:
 | `sort` | bool | `false` | Niedrigster Stand zuerst |
 | `preset` | s.u. | `standard` | Fertige Farbrampe (LED-Farben) |
 | `surface` | `classic` \| `glass` \| `flat` | `classic` | Gehäuse, unbeleuchtete Segmente und Rahmen |
+| `rise_is_bad` | bool | `false` | Tauscht die beiden Richtungsfarben: ein steigender Wert ist dann rot und ein fallender grün — richtig für Verbrauch, Netzbezug oder einen volllaufenden Abwassertank. Der Pfeil zeigt weiterhin in die Richtung, in die sich der Wert bewegt, nur seine Farbe dreht sich. Auch je Zeile setzbar, damit Erzeugung und Verbrauch auf eine Karte passen |
 | `color_state` | bool | `true` | Wert rechts in der Richtungsfarbe, sobald ein Fluss erkannt ist |
 | `color_mode` | `level` \| `segment` | `level` | `level`: der ganze Balken trägt die Farbe der aktuellen Stufe. `segment`: jedes Segment hat seine eigene Farbe nach der Schwelle, die es abdeckt — die Rampe läuft dann von links nach rechts durch |
 | `warn_below` | 0–100 | `0` | Unter diesem Stand pulsiert der Balken und der Wert wird fett gesetzt, `0` = aus. Die **Farbe** des Werts bleibt dem Ladefluss vorbehalten, damit sich beide nicht widersprechen |
@@ -153,6 +154,7 @@ würde Dauerflattern den Umbau endlos verschieben. `0` = sofort.
 | `precision` | Nachkommastellen nur für diese Zeile |
 | `reserve` | Reserve dieser Zeile — Zahl oder die Entität, die sie liefert |
 | `unit` | Einheit nur für diese Zeile |
+| `rise_is_bad` | Tauscht die Richtungsfarben nur für diese Zeile |
 | `invert` | Dreht die erkannte Richtung um, für Sensoren mit umgekehrtem Vorzeichen (`..._inverted`) |
 | `charging` | `binary_sensor`, `on` = lädt |
 | `power` | ein vorzeichenbehafteter Sensor: `+` lädt, `−` entlädt |
@@ -388,7 +390,7 @@ Die Optionen liegen in aufklappbaren Gruppen statt in einem langen Raster:
 | Inhalt der Zeile | Symbol, Name, Wert, deren Breiten, Nachkommastellen, Einheit, letzte Änderung |
 | Balken und Gehäuse | Segmente, Spalten, Höhe, Abstand, Sortierung, Pluspol, Rahmen |
 | Farben | Rampe, Gehäuse-Voreinstellung, Färbungsmodus, Schwellen, eigene Farben |
-| Ladefluss | Pfeil, dessen Darstellung, Animation und Maßstab, Totband |
+| Ladefluss | Pfeil, dessen Darstellung, Animation und Maßstab, `rise_is_bad`, Totband |
 | Animation | die Betriebsart und die Stellschrauben, die dazugehören |
 | Reserve und Warnung | Reserve, Schwellen darüber, Warnung, Peak-Hold |
 | Skala und Trend | `min`/`max`, `invert_levels` und die Trend-Optionen — nur Gauge Card |

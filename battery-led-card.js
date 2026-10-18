@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.19.0";
+export const VERSION = "4.20.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -31,10 +31,13 @@ const FLOW_DEFAULT = {
 };
 
 /** Farbe für die Richtung: `colors.pos` beim Steigen, `colors.neg` beim Fallen. */
-export const flowColor = (dir, colors = {}) => {
+export const flowColor = (dir, colors = {}, riseIsBad = false) => {
   if (!dir) return "";
-  const own = dir === "charging" ? colors.pos : colors.neg;
-  return toCss(own ?? FLOW_DEFAULT[dir]);
+  // Steigen ist normalerweise das Gute (Batterie lädt). Bei Verbrauch, Abwasser oder Bezug
+  // ist es umgekehrt — dann tauschen die beiden Richtungsfarben, der Pfeil bleibt wie er ist.
+  const gut = (dir === "charging") !== !!riseIsBad;
+  const own = gut ? colors.pos : colors.neg;
+  return toCss(own ?? FLOW_DEFAULT[gut ? "charging" : "discharging"]);
 };
 
 const mono = (c) => ({ critical: c, low: c, medium: c, high: c, full: c });
@@ -564,6 +567,7 @@ export const DEFAULTS = {
   trend_history: true,
   trend_full_scale: 5,
   invert_levels: false,
+  rise_is_bad: false,
 };
 
 let WAVE_ID = 0;
@@ -849,14 +853,16 @@ export class BatteryLedCard extends Base {
         pct.textContent = swap
           ? (dir === "charging" ? "▲" : "▼")
           : this._stateText(st, lvl, item, c, locale);
-        pct.style.color = swap || (c.color_state && dir) ? flowColor(dir, c.colors) : "";
+        pct.style.color = swap || (c.color_state && dir)
+          ? flowColor(dir, c.colors, item.rise_is_bad ?? c.rise_is_bad)
+          : "";
       }
       if (time) time.textContent = st ? relTime(st.last_changed, Date.now(), locale) : "";
 
       if (chev) {
         chev.icon = dir === "charging" ? "mdi:chevron-up"
           : dir === "discharging" ? "mdi:chevron-down" : "";
-        chev.style.color = flowColor(dir, c.colors);
+        chev.style.color = flowColor(dir, c.colors, item.rise_is_bad ?? c.rise_is_bad);
         chev.className = c.animate_flow && dir ? (dir === "charging" ? "up" : "down") : "";
         const scale = flow.rate?.trend ? c.trend_full_scale : c.flow_full_scale;
         chev.style.setProperty("--bl-dur", `${flowDuration(flow.rate?.value, scale)}s`);
@@ -1098,6 +1104,7 @@ const LABELS = {
     trend_history: "Query history on load",
     trend_full_scale: "Full speed at … %/min",
     invert_levels: "High values are bad (mirror the colours)",
+    rise_is_bad: "A rise is bad (swap the direction colours)",
     cap: "Show positive terminal",
     cap_size: "Terminal size (px)",
     frame_width: "Frame width (px, 0 = no frame)",
@@ -1181,6 +1188,7 @@ const LABELS = {
     trend_history: "Verlauf beim Laden abfragen",
     trend_full_scale: "Volles Tempo bei … %/min",
     invert_levels: "Hohe Werte sind schlecht (Farben spiegeln)",
+    rise_is_bad: "Anstieg ist schlecht (Richtungsfarben tauschen)",
     cap: "Pluspol anzeigen",
     cap_size: "Pluspol-Größe (px)",
     frame_width: "Rahmenstärke (px, 0 = kein Rahmen)",
@@ -1344,6 +1352,7 @@ const itemFields = (generic) =>
         ] },
         { name: "reserve", selector: { text: {} } },
         { name: "unit", selector: { text: {} } },
+        { name: "rise_is_bad", selector: { boolean: {} } },
       ]
     : [
         { name: "entity", selector: ent(VALUE_DOMAINS) },
@@ -1358,6 +1367,7 @@ const itemFields = (generic) =>
         { name: "reserve", selector: { text: {} } },
         { name: "unit", selector: { text: {} } },
         { name: "invert", selector: { boolean: {} } },
+        { name: "rise_is_bad", selector: { boolean: {} } },
       ];
 
 const BASE_SCHEMA = [{ name: "title", selector: { text: {} } }];
@@ -1486,6 +1496,7 @@ const tailSchema = (generic, lang = "en", config = {}) => {
         { value: "alternate", label: O.flow_style_alternate },
       ]),
       { name: "animate_flow", selector: { boolean: {} } },
+      { name: "rise_is_bad", selector: { boolean: {} } },
       ...(generic ? [] : [
         { name: "flow_full_scale", selector: num(1, 100000, 1) },
         { name: "deadband", selector: num(0, 10000, 0.1) },

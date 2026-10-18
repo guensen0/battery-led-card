@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.19.0** — `invert_levels`: say whether a rise is the good or the bad direction
+**v4.20.0** — `rise_is_bad`: say which direction of change is the good one
 
 Two Lovelace cards, one file, one resource:
 
@@ -106,6 +106,7 @@ entities:
 | `sort` | bool | `false` | lowest level first |
 | `preset` | see below | `standard` | ready-made color ramp (LED colors) |
 | `surface` | `classic` \| `glass` \| `flat` | `classic` | housing, unlit segments and frame |
+| `rise_is_bad` | bool | `false` | Swaps the two direction colours: a rising value is then red and a falling one green — right for consumption, grid import or a filling waste-water tank. The arrow still points the way the value moves, only its colour changes. Also settable per row, so production and consumption can share one card |
 | `color_state` | bool | `true` | value on the right in the direction color, as soon as a flow is detected |
 | `color_mode` | `level` \| `segment` | `level` | `level`: the whole bar carries the color of the current level. `segment`: each segment has its own color by the threshold it covers — the ramp then runs left to right |
 | `warn_below` | 0–100 | `0` | below this level the bar pulses and the value is set in bold, `0` = off. The **colour** of the value stays reserved for the charge direction, so the two never contradict each other |
@@ -151,6 +152,7 @@ flapping would postpone the rebuild forever. `0` = immediately.
 | `precision` | decimal places for this row only |
 | `reserve` | reserve for this row — a number or the entity that provides it |
 | `unit` | unit for this row only |
+| `rise_is_bad` | swaps the direction colours for this row only |
 | `invert` | flips the detected direction, for sensors that count the other way round (`..._inverted`) |
 | `charging` | `binary_sensor`, `on` = charging |
 | `power` | a signed sensor: `+` charging, `−` discharging |
@@ -386,7 +388,7 @@ The options sit in collapsible groups instead of one long grid:
 | Row content | icon, name, value, their widths, decimals, unit, last-changed |
 | Bar and housing | segments, columns, height, gap, sort, terminal, frame |
 | Colours | ramp, housing preset, colouring mode, thresholds, custom colours |
-| Charge flow | arrow, its style, animation and scale, deadband |
+| Charge flow | arrow, its style, animation and scale, `rise_is_bad`, deadband |
 | Animation | the mode and the settings belonging to it |
 | Reserve and warning | reserve, thresholds above it, warning, peak hold |
 | Scale and trend | `min`/`max`, `invert_levels` and the trend options — gauge card only |
