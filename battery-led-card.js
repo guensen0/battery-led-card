@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "4.18.0";
+export const VERSION = "4.19.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -241,6 +241,13 @@ export const batteryLevel = (st) => {
   if (st.state === "off") return 100;
   return null;
 };
+
+/**
+ * Spiegelt den Stand für die Farbwahl, wenn hohe Werte das Schlechte sind: aus 90 wird 10,
+ * damit ein voller Abwassertank rot ist und ein leerer grün. Betrifft Farben, Warnung und
+ * Segmentrampe gemeinsam — die Aussage "unten ist schlecht" dreht sich komplett um.
+ */
+export const invertLevel = (v, invert) => (invert && v !== null && v !== undefined ? 100 - v : v);
 
 /**
  * Reserve einer Zeile: entweder direkt eine Zahl oder die Entität, die sie liefert.
@@ -556,6 +563,7 @@ export const DEFAULTS = {
   trend_deadband: 0.5,
   trend_history: true,
   trend_full_scale: 5,
+  invert_levels: false,
 };
 
 let WAVE_ID = 0;
@@ -822,7 +830,7 @@ export class BatteryLedCard extends Base {
       const reserveCol = toCss(c.colors.reserve ?? RESERVE);
       // Schwellen und Warnung wahlweise am nutzbaren Teil messen statt am ganzen Balken
       const res4lvl = c.levels_above_reserve ? resPct : null;
-      const lvlForColor = aboveReserve(lvl, res4lvl);
+      const lvlForColor = invertLevel(aboveReserve(lvl, res4lvl), c.invert_levels);
 
       if (icon) {
         // ha-state-icon kennt die Zustandslogik (Batteriestand, device_class) schon
@@ -892,11 +900,14 @@ export class BatteryLedCard extends Base {
         let col = color;
         if (i < reserveOn) col = reserveCol;
         else if (lvl !== null && this._segColors) {
+          // bei invert_levels läuft die Rampe andersherum über den Balken
+          const spiegel = (idx, n) => (c.invert_levels ? n - 1 - idx : idx);
           col = res4lvl
             ? segmentColor(
-                i - reserveOn, Math.max(1, c.segments - reserveOn), c.colors, c.thresholds,
+                spiegel(i - reserveOn, Math.max(1, c.segments - reserveOn)),
+                Math.max(1, c.segments - reserveOn), c.colors, c.thresholds,
               )
-            : this._segColors[i];
+            : this._segColors[spiegel(i, c.segments)];
         }
         const lit = i < on || i === pulse || i === peakAt;
         s.style.background = lit ? col : off;
@@ -1086,6 +1097,7 @@ const LABELS = {
     trend_deadband: "Trend threshold (% change, below = idle)",
     trend_history: "Query history on load",
     trend_full_scale: "Full speed at … %/min",
+    invert_levels: "High values are bad (mirror the colours)",
     cap: "Show positive terminal",
     cap_size: "Terminal size (px)",
     frame_width: "Frame width (px, 0 = no frame)",
@@ -1168,6 +1180,7 @@ const LABELS = {
     trend_deadband: "Trend-Schwelle (% Änderung, darunter = Ruhe)",
     trend_history: "Verlauf beim Laden abfragen",
     trend_full_scale: "Volles Tempo bei … %/min",
+    invert_levels: "Hohe Werte sind schlecht (Farben spiegeln)",
     cap: "Pluspol anzeigen",
     cap_size: "Pluspol-Größe (px)",
     frame_width: "Rahmenstärke (px, 0 = kein Rahmen)",
@@ -1509,6 +1522,7 @@ const tailSchema = (generic, lang = "en", config = {}) => {
       ? group(O.group_scale, [
           { name: "min", selector: num(-1000000, 1000000, 0.01) },
           { name: "max", selector: num(-1000000, 1000000, 0.01) },
+          { name: "invert_levels", selector: { boolean: {} } },
           { name: "trend_flow", selector: { boolean: {} } },
           { name: "trend_hold", selector: num(10, 86400, 10) },
           { name: "trend_deadband", selector: num(0, 100, 0.1) },

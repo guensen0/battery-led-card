@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v4.18.0** — the editor is grouped, and options that would do nothing are hidden
+**v4.19.0** — `invert_levels`: say whether a rise is the good or the bad direction
 
 Two Lovelace cards, one file, one resource:
 
@@ -307,6 +307,7 @@ Same options as above, plus:
 |---|---|---|---|
 | `min` | number | `0` | value that corresponds to 0% (card-wide) |
 | `max` | number | `100` | value that corresponds to 100% (card-wide) |
+| `invert_levels` | bool | `false` | Mirrors the scale for everything that judges the value: 90 is read as 10, so a full waste-water tank is red and an empty one green. Thresholds, `warn_below` and the segment ramp turn together. Different from `preset: invers`, which only swaps the colours while the thresholds stay at the bottom |
 | `trend_flow` | bool | `true` | arrow derived from the value's own trend, when no charge-flow sensors are given. Only on here — the battery card leaves it off, a battery dropping by 1% doesn't need an arrow |
 | `trend_deadband` | 0–100% | `0.5` | changes smaller than this (in % of scale) count as idle — the counterpart to `deadband` on the battery card. Also settable per row |
 | `trend_hold` | 10–86400 s | `300` | how long the arrow stays after the last change, and how far back the history query looks |
@@ -388,7 +389,7 @@ The options sit in collapsible groups instead of one long grid:
 | Charge flow | arrow, its style, animation and scale, deadband |
 | Animation | the mode and the settings belonging to it |
 | Reserve and warning | reserve, thresholds above it, warning, peak hold |
-| Scale and trend | `min`/`max` and the trend options — gauge card only |
+| Scale and trend | `min`/`max`, `invert_levels` and the trend options — gauge card only |
 
 A field only appears while it can do something: `cap_size` needs `cap`, `pulse_width` only
 exists for `animation: pulse`, `blink_cycles` only for `fill_blink`, the trend settings only

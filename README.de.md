@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v4.18.0** — der Editor ist gruppiert, und Optionen ohne Wirkung werden ausgeblendet
+**v4.19.0** — `invert_levels`: sagen, ob ein Anstieg gut oder schlecht ist
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -309,6 +309,7 @@ Gleiche Optionen wie oben, plus:
 |---|---|---|---|
 | `min` | number | `0` | Wert, der 0 % entspricht (Karte) |
 | `max` | number | `100` | Wert, der 100 % entspricht (Karte) |
+| `invert_levels` | bool | `false` | Spiegelt die Skala für alles, was den Wert bewertet: 90 wird als 10 gelesen, ein voller Abwassertank ist also rot und ein leerer grün. Schwellen, `warn_below` und die Segmentrampe drehen sich gemeinsam. Nicht zu verwechseln mit `preset: invers` — das tauscht nur die Farbwerte, die Schwellen bleiben unten |
 | `trend_flow` | bool | `true` | Pfeil aus dem eigenen Verlauf, wenn keine Ladefluss-Sensoren angegeben sind. Nur hier an — die Batteriekarte lässt ihn aus, ein um 1 % fallender Akku braucht keinen Pfeil |
 | `trend_deadband` | 0–100 % | `0.5` | Änderungen kleiner als dieser Wert (in % der Skala) gelten als Ruhe — das Gegenstück zu `deadband` auf der Batteriekarte. Auch je Zeile setzbar |
 | `trend_hold` | 10–86400 s | `300` | So lange bleibt der Pfeil nach der letzten Änderung stehen, und so weit blickt die History-Abfrage zurück |
@@ -390,7 +391,7 @@ Die Optionen liegen in aufklappbaren Gruppen statt in einem langen Raster:
 | Ladefluss | Pfeil, dessen Darstellung, Animation und Maßstab, Totband |
 | Animation | die Betriebsart und die Stellschrauben, die dazugehören |
 | Reserve und Warnung | Reserve, Schwellen darüber, Warnung, Peak-Hold |
-| Skala und Trend | `min`/`max` und die Trend-Optionen — nur Gauge Card |
+| Skala und Trend | `min`/`max`, `invert_levels` und die Trend-Optionen — nur Gauge Card |
 
 Ein Feld erscheint nur, solange es etwas bewirken kann: `cap_size` braucht `cap`,
 `pulse_width` gibt es nur bei `animation: pulse`, `blink_cycles` nur bei `fill_blink`, die
