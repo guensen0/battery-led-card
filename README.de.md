@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v5.4.0** — `layout`: bestimmen, was links und rechts vom Balken steht
+**v5.5.0** — zwei Auswahllisten bestimmen, was links und rechts vom Balken steht
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -131,6 +131,12 @@ layout: state, bar, name            # gespiegelt: Wert links, Name rechts
 layout: name, bar                   # ganz ohne Wert
 layout: bar                         # nur der Balken
 ```
+
+Im Editor sind das zwei Auswahllisten, **Links vom Balken** und **Rechts vom Balken**, mit
+Symbol, Name, letzter Änderung, Ladefluss-Pfeil und Wert zur Wahl; der Balken steht immer
+dazwischen und wird deshalb nicht angeboten. Beide schreiben denselben Schlüssel `layout`, der
+sich im YAML auch direkt setzen lässt. Ist eine Reihenfolge gesetzt, verschwinden die
+`show_*`-Schalter aus dem Editor — die Liste sagt ja schon, was erscheint.
 
 Der Balken ist der Anker: Teile links von ihm richten sich linksbündig aus, Teile rechts davon
 rechtsbündig — eine gespiegelte Zeile liest sich dadurch genauso sauber wie die normale.

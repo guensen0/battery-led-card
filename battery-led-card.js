@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "5.4.0";
+export const VERSION = "5.5.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -275,6 +275,21 @@ export const parseLayout = (layout, standard) => {
   const teile = [...new Set(roh.map((x) => String(x).trim().toLowerCase()))]
     .filter((x) => LAYOUT_PARTS.includes(x));
   return teile.length ? teile : standard;
+};
+
+/** Teilt eine Reihenfolge am Balken in die beiden Seiten — für die Auswahl im Editor. */
+export const splitLayout = (layout, standard) => {
+  const teile = parseLayout(layout, standard);
+  const i = teile.indexOf("bar");
+  return i < 0
+    ? { left: teile, right: [] }
+    : { left: teile.slice(0, i), right: teile.slice(i + 1) };
+};
+
+/** Setzt die beiden Seiten wieder zu einer Reihenfolge zusammen, Balken in der Mitte. */
+export const joinLayout = (left = [], right = []) => {
+  const sortiert = (xs) => LAYOUT_PARTS.filter((t) => t !== "bar" && xs.includes(t));
+  return [...sortiert(left), "bar", ...sortiert(right)];
 };
 
 /** Erkennt eine Jinja-Vorlage — alles andere wird unverändert als Symbolname benutzt. */
@@ -1402,7 +1417,8 @@ const LABELS = {
     columns: "Spalten",
     bar_height: "Höhe der Balken (px)",
     row_gap: "Abstand zwischen den Spalten (px)",
-    layout: "Reihenfolge der Zeile (icon, name, time, bar, flow, state)",
+    layout_left: "Links vom Balken",
+    layout_right: "Rechts vom Balken",
     name_width: "Breite der Beschriftung (auto, 30%, 120px …)",
     state_width: "Breite des Werts (auto, 3.2em, 60px …)",
     precision: "Nachkommastellen (leer = wie die Entität)",
@@ -1517,6 +1533,11 @@ export const labelFor = (schema, generic, labels = LABELS.en, generic_labels = G
 // separat von LABELS, weil das keine Feldnamen sind, sondern Werte innerhalb eines Felds.
 const OPTION_LABELS = {
   en: {
+    part_icon: "Symbol",
+    part_name: "Name",
+    part_time: "Last changed",
+    part_flow: "Flow arrow",
+    part_state: "Value",
     group_row: "Row content",
     group_bar: "Bar and housing",
     group_colors: "Colours",
@@ -1548,6 +1569,11 @@ const OPTION_LABELS = {
     color_mode_segment: "Each segment by its own threshold",
   },
   de: {
+    part_icon: "Symbol",
+    part_name: "Name",
+    part_time: "Letzte Änderung",
+    part_flow: "Ladefluss-Pfeil",
+    part_state: "Wert",
     group_row: "Inhalt der Zeile",
     group_bar: "Balken und Gehäuse",
     group_colors: "Farben",
@@ -1650,6 +1676,12 @@ export const fieldVisible = (name, c = {}, generic = false, split = false) => {
   const hasReserve = String(c.reserve ?? "").trim() !== ""
     || (c.entities ?? []).some((e) => String(e?.reserve ?? "").trim() !== "");
   switch (name) {
+    case "show_icon":
+    case "show_name":
+    case "show_state":
+    case "show_last_changed":
+      // Steht die Reihenfolge fest, bestimmt sie auch, was erscheint
+      return !String(c.layout ?? "").length;
     case "name_width": return c.show_name !== false;
     case "state_width":
     case "precision":
@@ -1721,7 +1753,17 @@ const tailSchema = (generic, lang = "en", config = {}, split = false) => {
       { name: "columns", selector: num(1, 6) },
       { name: "bar_height", selector: num(8, 80) },
       { name: "row_gap", selector: num(0, 40) },
-      { name: "layout", selector: { text: {} } },
+      ...["layout_left", "layout_right"].map((name) => ({
+        name,
+        selector: {
+          select: {
+            multiple: true,
+            mode: "dropdown",
+            options: LAYOUT_PARTS.filter((t) => t !== "bar")
+              .map((value) => ({ value, label: O["part_" + value] })),
+          },
+        },
+      })),
       { name: "sort", selector: { boolean: {} } },
       { name: "cap", selector: { boolean: {} } },
       { name: "cap_size", selector: num(1, 20) },
@@ -1914,8 +1956,22 @@ export class BatteryLedCardEditor extends Base {
       itemsSchema(items, this._hass, this._generic, this._lang, this._config, this._split),
       ...tailSchema(this._generic, this._lang, this._config, this._split),
     ];
+    // Die beiden Auswahllisten sind keine eigenen Config-Schlüssel, sie beschreiben `layout`.
+    // Ohne gesetztes layout zeigen sie die Reihenfolge, die gerade gilt.
+    const c0 = { ...DEFAULTS, ...this._config };
+    const standard = [
+      ...(c0.show_icon ? ["icon"] : []),
+      ...(c0.show_name ? ["name"] : []),
+      ...(!this._split && c0.show_last_changed ? ["time"] : []),
+      "bar",
+      ...(!this._split && c0.show_flow && c0.flow_style === "arrow" ? ["flow"] : []),
+      ...(c0.show_state ? ["state"] : []),
+    ];
+    const seiten = splitLayout(this._config.layout, standard);
     this._form.data = {
-      ...DEFAULTS,                            // sonst stehen ungesetzte Schalter im Editor auf aus
+      ...DEFAULTS,
+      layout_left: seiten.left,
+      layout_right: seiten.right,                            // sonst stehen ungesetzte Schalter im Editor auf aus
       trend_flow: this._generic,
       ...this._config,
       entities: undefined,
@@ -2001,7 +2057,8 @@ export class BatteryLedCardEditor extends Base {
   }
 
   _valueChanged(ev) {
-    const { items = {}, entities: _drop, ...data } = ev.detail.value;
+    const { items = {}, entities: _drop, layout_left, layout_right, ...data } = ev.detail.value;
+    if (layout_left || layout_right) data.layout = joinLayout(layout_left, layout_right).join(", ");
     const list = this._items.map((_, i) => items[`e${i}`] ?? {});
     if (items.new?.entity) list.push(items.new);
     this._emit({

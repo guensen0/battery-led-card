@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v5.4.0** — `layout`: decide what sits left and right of the bar
+**v5.5.0** — two dropdowns pick what goes left and right of the bar
 
 Two Lovelace cards, one file, one resource:
 
@@ -130,6 +130,12 @@ layout: state, bar, name            # mirrored: value on the left, name on the r
 layout: name, bar                   # no value at all
 layout: bar                         # nothing but the bar
 ```
+
+In the editor this is two dropdowns, **Left of the bar** and **Right of the bar**, each
+offering icon, name, last changed, flow arrow and value; the bar always sits between them, so
+it is not on offer. They write the same `layout` key, which is why YAML can set it directly.
+Once a layout is set the `show_*` switches disappear from the editor — the list already says
+what appears.
 
 The bar is the anchor: parts left of it align to the left, parts right of it to the right, so
 a mirrored row reads as cleanly as the normal one. `name_width` and `state_width` keep working
