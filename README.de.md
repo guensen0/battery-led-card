@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v5.5.1** — die Auswahl nimmt wieder mehr als einen Teil je Seite
+**v5.6.0** — auf der Flow-Karte darf ein Teil auf beiden Seiten stehen, je an seiner Entität
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -144,6 +144,23 @@ rechtsbündig — eine gespiegelte Zeile liest sich dadurch genauso sauber wie d
 behält ihre Breite, wohin du sie auch stellst, und der Wert ebenso. `auto` misst beide und
 richtet sie über alle Zeilen bündig aus wie bisher — die Position spielt dabei keine Rolle.
 Eine Breite, deren Teil nicht in der Reihenfolge steht, verschwindet aus dem Editor.
+
+Auf der Flow-Karte darf ein Teil auf **beiden** Seiten stehen, denn jede Seite hat ihre eigene
+Entität:
+
+```yaml
+layout: icon, state, bar, state, icon
+entities:
+  - entity: sensor.bezug
+    entity_left: sensor.einspeisung
+    icon: mdi:transmission-tower-import
+    icon_left: mdi:transmission-tower-export
+```
+
+Das linke Symbol zeigt dann die linke Entität und das rechte die rechte, und jede Wertespalte
+trägt ihre eigene Seite — ohne Vorzeichen, denn die Seite sagt die Richtung ja schon. Mit nur
+einer Wertespalte bekommst du die Zahl mit Vorzeichen von oben. Auf den anderen beiden Karten
+kommt ein Teil weiterhin einmal je Zeile vor, dort gibt es nur eine Entität.
 
 ### Entitäten einsammeln
 
@@ -448,6 +465,7 @@ Fluss hat zu einem Zeitpunkt eine Richtung.
 |---|---|
 | `entity` | der Wert, der nach **rechts** wächst |
 | `entity_left` | der Wert, der nach **links** wächst |
+| `icon` / `icon_left` | Symbol je Seite; ohne `icon_left` gilt `icon` |
 | `max` / `max_left` | Vollausschlag je Seite; `min` setzt das innere Ende, Default `0` |
 | `name`, `icon`, `precision`, `unit` | wie auf den anderen Karten |
 

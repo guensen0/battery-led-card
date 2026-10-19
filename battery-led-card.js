@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "5.5.1";
+export const VERSION = "5.6.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -265,21 +265,29 @@ export const LAYOUT_PARTS = ["icon", "name", "time", "bar", "flow", "state"];
  * show_*-Schaltern; ist `layout` gesetzt, bestimmt die Liste allein, was erscheint und in
  * welcher Reihenfolge — unbekannte Namen und Doppelte fallen weg.
  */
-export const parseLayout = (layout, standard) => {
+export const parseLayout = (layout, standard, proSeite = false) => {
   const roh = Array.isArray(layout)
     ? layout
     : typeof layout === "string" && layout.trim()
       ? layout.split(/[,\s]+/)
       : null;
   if (!roh) return standard;
-  const teile = [...new Set(roh.map((x) => String(x).trim().toLowerCase()))]
+  const sauber = roh
+    .map((x) => String(x).trim().toLowerCase())
     .filter((x) => LAYOUT_PARTS.includes(x));
-  return teile.length ? teile : standard;
+  if (!sauber.length) return standard;
+  if (!proSeite) return [...new Set(sauber)];
+  // Flow-Karte: je Seite einmal, denn links und rechts stehen verschiedene Entitäten
+  const i = sauber.indexOf("bar");
+  const ohneBalken = (xs) => [...new Set(xs.filter((t) => t !== "bar"))];
+  return i < 0
+    ? ohneBalken(sauber)
+    : [...ohneBalken(sauber.slice(0, i)), "bar", ...ohneBalken(sauber.slice(i + 1))];
 };
 
 /** Teilt eine Reihenfolge am Balken in die beiden Seiten — für die Auswahl im Editor. */
-export const splitLayout = (layout, standard) => {
-  const teile = parseLayout(layout, standard);
+export const splitLayout = (layout, standard, proSeite = false) => {
+  const teile = parseLayout(layout, standard, proSeite);
   const i = teile.indexOf("bar");
   return i < 0
     ? { left: teile, right: [] }
@@ -881,27 +889,23 @@ export class BatteryLedCard extends Base {
         ...(!this._split && c.show_flow && c.flow_style === "arrow" ? ["flow"] : []),
         ...(c.show_state ? ["state"] : []),
       ];
-      const teile = parseLayout(c.layout, standard);
+      const teile = parseLayout(c.layout, standard, this._split);
       const balken = this._split
         ? `<div class="batt">
              <div class="half left"></div><div class="mid"></div><div class="half right"></div>
            </div>`
         : `<div class="batt"><div class="body"></div>${c.cap ? '<div class="cap"></div>' : ""}</div>`;
-      const stueck = {
-        icon: '<ha-state-icon class="icon"></ha-state-icon>',
-        name: '<div class="name"></div>',
-        time: '<div class="time"></div>',
+      const vorBalken = teile.indexOf("bar");
+      const seiteVon = (k) => (vorBalken >= 0 && k < vorBalken ? "lseite" : "rseite");
+      const stueck = (t, seite) => ({
+        icon: `<ha-state-icon class="icon ${seite}"></ha-state-icon>`,
+        name: `<div class="name ${seite}"></div>`,
+        time: `<div class="time ${seite}"></div>`,
         bar: balken,
         flow: '<div class="chev"><ha-icon></ha-icon></div>',
-        state: '<div class="pct"></div>',
-      };
-      row.innerHTML = teile.map((t) => stueck[t]).join("");
-      const vorBalken = teile.indexOf("bar");
-      for (const [k, t] of teile.entries()) {
-        if (t !== "name" && t !== "state" && t !== "time") continue;
-        const el = row.querySelector(t === "state" ? ".pct" : `.${t}`);
-        if (el) el.style.textAlign = vorBalken >= 0 && k < vorBalken ? "left" : "right";
-      }
+        state: `<div class="pct ${seite}"></div>`,
+      })[t];
+      row.innerHTML = teile.map((t, k) => stueck(t, seiteVon(k))).join("");
       row.style.gap = `${c.row_gap}px`;
       // Gehäuse: ein Balken, bei der Flow-Karte zwei Hälften mit Mittelstrich
       const koerper = this._split
@@ -924,10 +928,20 @@ export class BatteryLedCard extends Base {
         capEl.style.height =
           `${Math.max(9, Math.round(c.bar_height * 0.45), Math.round(c.cap_size * 1.8))}px`;
       }
-      const nameEl = row.querySelector(".name");
-      if (nameEl) nameEl.style.flex = nameFlex(c.name_width);
-      const pctEl = row.querySelector(".pct");
-      if (pctEl) pctEl.style.flex = nameFlex(c.state_width, DEFAULT_STATE_WIDTH);
+      // Jeden Teil einmal holen und dabei die Seite festhalten — links vom Balken wird
+      // linksbündig ausgerichtet, rechts davon rechtsbündig.
+      const jeSeite = (klasse) => [["lseite", true], ["rseite", false]]
+        .map(([seite, links]) => ({ el: row.querySelector(`.${klasse}.${seite}`), links }))
+        .filter((x) => x.el);
+      const pcts = jeSeite("pct");
+      const icons = jeSeite("icon");
+      const namen = jeSeite("name");
+      const zeiten = jeSeite("time");
+      for (const liste of [pcts, namen, zeiten]) {
+        for (const { el, links } of liste) el.style.textAlign = links ? "left" : "right";
+      }
+      for (const { el } of namen) el.style.flex = nameFlex(c.name_width);
+      for (const { el } of pcts) el.style.flex = nameFlex(c.state_width, DEFAULT_STATE_WIDTH);
       const bauSegmente = (body) => Array.from({ length: c.segments }, () => {
         const s = document.createElement("div");
         s.className = "seg";
@@ -944,10 +958,11 @@ export class BatteryLedCard extends Base {
       grid.appendChild(row);
       return {
         item, row, segs, segsLeft,
-        icon: row.querySelector(".icon"),
-        name: row.querySelector(".name"),
-        pct: row.querySelector(".pct"),
-        time: row.querySelector(".time"),
+        icons, pcts,
+        icon: icons[0]?.el ?? null,
+        name: namen[0]?.el ?? null,
+        pct: pcts[0]?.el ?? null,
+        time: zeiten[0]?.el ?? null,
         chev: row.querySelector(".chev ha-icon"),
       };
     });
@@ -1120,7 +1135,7 @@ export class BatteryLedCard extends Base {
    * Die linke Hälfte ist per CSS gespiegelt (row-reverse), gerechnet wird sie wie die rechte.
    */
   _splitRow(r, c, off, locale) {
-    const { item, row, segs, segsLeft, icon, name, pct } = r;
+    const { item, row, segs, segsLeft, name } = r;
     const states = this._hass.states;
     const seite = (id, max) => {
       const st = states[id];
@@ -1129,17 +1144,27 @@ export class BatteryLedCard extends Base {
     const rechts = seite(item.entity, item.max ?? c.max);
     const links = seite(item.entity_left, item.max_left ?? item.max ?? c.max);
 
-    if (icon) {
-      icon.hass = this._hass;
-      icon.stateObj = rechts.st ?? links.st;
-      icon.icon = this._template(item.icon) || undefined;
+    // Je Seite ein eigenes Symbol: links das der linken Entität, rechts das der rechten.
+    for (const { el, links: istLinks } of r.icons ?? []) {
+      const quelle = istLinks ? links : rechts;
+      el.hass = this._hass;
+      el.stateObj = quelle.st ?? rechts.st ?? links.st;
+      el.icon = this._template(istLinks ? item.icon_left ?? item.icon : item.icon) || undefined;
     }
     if (name) {
       name.textContent = item.name
         ?? rechts.st?.attributes?.friendly_name ?? item.entity ?? item.entity_left ?? "";
     }
     row.classList.toggle("dead", rechts.lvl === null && links.lvl === null);
-    if (pct) pct.textContent = this._sideText(rechts, links, item, c, locale);
+    // Eine Wertespalte zeigt beide Seiten mit Vorzeichen; zwei zeigen je ihre eigene Seite.
+    const pcts = r.pcts ?? [];
+    if (pcts.length > 1) {
+      for (const { el, links: istLinks } of pcts) {
+        el.textContent = this._sideText(istLinks ? links : rechts, { st: null }, item, c, locale);
+      }
+    } else if (pcts[0]) {
+      pcts[0].el.textContent = this._sideText(rechts, links, item, c, locale);
+    }
 
     // Ziel: die Seite mit dem größeren Ausschlag, dort so viele LEDs wie der Wert hergibt
     const an = (x) => (x.lvl === null ? 0 : filledSegments(x.lvl, c.segments));
@@ -1282,7 +1307,9 @@ export class BatteryLedCard extends Base {
         if (!this.isConnected || !this._rows) return;
         let ok = true;
         for (const k of cols) {
-          const els = this._rows.map((r) => r[k]).filter(Boolean);
+          const els = k === "pct"
+            ? this._rows.flatMap((r) => (r.pcts ?? []).map((x) => x.el))
+            : this._rows.map((r) => r[k]).filter(Boolean);
           els.forEach((el) => { el.style.flex = "0 0 auto"; });
           const widest = Math.max(0, ...els.map((el) => el.scrollWidth));
           if (!widest) { ok = false; continue; }
@@ -1367,6 +1394,7 @@ const LABELS = {
     rise_is_bad: "A rise is bad (swap the direction colours)",
     entity_left: "Entity on the left (empty = remove)",
     max_left: "Maximum on the left (empty = same as on the right)",
+    icon_left: "Icon on the left (empty = same as on the right)",
     transition: "Run the bar up and down LED by LED",
     transition_step: "Milliseconds per LED",
     cap: "Show positive terminal",
@@ -1458,6 +1486,7 @@ const LABELS = {
     rise_is_bad: "Anstieg ist schlecht (Richtungsfarben tauschen)",
     entity_left: "Entität links (leeren = entfernen)",
     max_left: "Maximum links (leer = wie rechts)",
+    icon_left: "Symbol links (leer = wie rechts)",
     transition: "Balken LED für LED auf- und abbauen",
     transition_step: "Millisekunden je LED",
     cap: "Pluspol anzeigen",
@@ -1627,6 +1656,7 @@ const itemFields = (generic, split = false) =>
         { name: "entity_left", selector: ent(VALUE_DOMAINS) },
         { name: "name", selector: { text: {} } },
         { name: "icon", selector: { icon: {} } },
+        { name: "icon_left", selector: { icon: {} } },
         { type: "grid", schema: [
           { name: "max", selector: num(-1000000, 1000000, 0.01) },
           { name: "max_left", selector: num(-1000000, 1000000, 0.01) },

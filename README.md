@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v5.5.1** — the layout pickers take more than one part per side again
+**v5.6.0** — on the flow card a part can sit on both sides, each tied to its own entity
 
 Two Lovelace cards, one file, one resource:
 
@@ -142,6 +142,22 @@ a mirrored row reads as cleanly as the normal one. `name_width` and `state_width
 wherever you put it, and so does the value. `auto` measures both and lines them up across all
 rows exactly as before — the measurement does not care about the position. A width whose part
 is not in the layout disappears from the editor.
+
+On the flow card a part may appear on **both** sides, since each side has its own entity:
+
+```yaml
+layout: icon, state, bar, state, icon
+entities:
+  - entity: sensor.bezug
+    entity_left: sensor.einspeisung
+    icon: mdi:transmission-tower-import
+    icon_left: mdi:transmission-tower-export
+```
+
+The left icon then shows the left entity and the right one the right entity, and each value
+cell carries its own side — without a sign, because the side already says the direction. With
+only one value cell you get the signed figure described above. On the other two cards a part
+still appears once per row; there is only one entity to show.
 
 ### Collecting entities
 
@@ -445,6 +461,7 @@ direction at a time.
 |---|---|
 | `entity` | the value growing to the **right** |
 | `entity_left` | the value growing to the **left** |
+| `icon` / `icon_left` | icon per side; `icon_left` falls back to `icon` |
 | `max` / `max_left` | full deflection per side; `min` sets the inner end, default `0` |
 | `name`, `icon`, `precision`, `unit` | as on the other cards |
 
