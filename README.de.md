@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v5.3.0** — die Flow-Karte baut ihre Balken LED für LED auf und ab
+**v5.4.0** — `layout`: bestimmen, was links und rechts vom Balken steht
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -79,6 +79,7 @@ entities:
 | `segments` | 1–40 | `12` | Anzahl LED-Balken pro Zeile |
 | `columns` | 1–6 | `1` | Spalten im Raster |
 | `bar_height` | 8–80 px | `22` | Höhe der Balken (Breite läuft responsiv mit) |
+| `layout` | Text \| Liste | – | Reihenfolge der Teile einer Zeile, aus `icon`, `name`, `time`, `bar`, `flow`, `state`. Ist sie gesetzt, bestimmt die Liste allein, was erscheint und wo — die `show_*`-Schalter greifen dann nicht mehr; leer bleibt es bei der gewohnten Reihenfolge. Groß- und Kleinschreibung egal, Doppelte und Unbekanntes fallen weg |
 | `row_gap` | 0–40 px | `8` | Abstand zwischen Symbol, Name, Balken, Pfeil und Wert |
 | `name_width` | CSS-Länge \| `auto` | `30%` | Breite der Beschriftung. `auto` misst den längsten Namen aus, alles andere wird direkt übernommen (`120px`, `10em`, `40%`) |
 | `precision` | 0–5 | – | Nachkommastellen des angezeigten Werts. Leer = wie die Entität liefert (Batteriekarte: ganze Prozent). Formatiert in der HA-Sprache, also `3,8` statt `3.8` |
@@ -121,6 +122,20 @@ entities:
 | `rebuild_delay` | 0–300 s | `5` | Puffer, bevor eine geänderte Auto-Liste neu gezeichnet wird |
 | `thresholds` | map | s.u. | Grenzen der Farbstufen in % |
 | `colors` | map | s.u. | Farbe je Stufe (s.u.) |
+
+### Eine Zeile anordnen
+
+```yaml
+layout: icon, name, bar, state      # die gewohnte Reihenfolge
+layout: state, bar, name            # gespiegelt: Wert links, Name rechts
+layout: name, bar                   # ganz ohne Wert
+layout: bar                         # nur der Balken
+```
+
+Der Balken ist der Anker: Teile links von ihm richten sich linksbündig aus, Teile rechts davon
+rechtsbündig — eine gespiegelte Zeile liest sich dadurch genauso sauber wie die normale.
+`name_width` und `state_width` wirken weiter, egal wo ihr Teil landet, `auto` eingeschlossen —
+die Ausmessung kümmert sich nicht um die Position.
 
 ### Entitäten einsammeln
 

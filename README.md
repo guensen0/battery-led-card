@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v5.3.0** — the flow card runs its bars up and down LED by LED
+**v5.4.0** — `layout`: decide what sits left and right of the bar
 
 Two Lovelace cards, one file, one resource:
 
@@ -78,6 +78,7 @@ entities:
 | `segments` | 1–40 | `12` | number of LED bars per row |
 | `columns` | 1–6 | `1` | columns in the grid |
 | `bar_height` | 8–80 px | `22` | height of the bars (width scales responsively) |
+| `layout` | string \| list | – | Order of the parts of a row, from `icon`, `name`, `time`, `bar`, `flow`, `state`. Set it and the list decides what appears and where, so the `show_*` switches no longer apply; leave it empty and the order is the usual one. Names are matched case-insensitively, duplicates and unknown ones are dropped |
 | `row_gap` | 0–40 px | `8` | gap between icon, name, bar, arrow and value |
 | `name_width` | CSS length \| `auto` | `30%` | label width. `auto` measures the longest name; anything else is used as-is (`120px`, `10em`, `40%`) |
 | `precision` | 0–5 | – | decimal places of the displayed value. Empty = as reported by the entity (battery card: whole percent). Formatted in the HA language, so `3.8` vs `3,8` |
@@ -120,6 +121,20 @@ entities:
 | `rebuild_delay` | 0–300 s | `5` | buffer before a changed auto-list is redrawn |
 | `thresholds` | map | see below | boundaries of the color levels, in % |
 | `colors` | map | see below | color per level (see below) |
+
+### Arranging a row
+
+```yaml
+layout: icon, name, bar, state      # the usual order
+layout: state, bar, name            # mirrored: value on the left, name on the right
+layout: name, bar                   # no value at all
+layout: bar                         # nothing but the bar
+```
+
+The bar is the anchor: parts left of it align to the left, parts right of it to the right, so
+a mirrored row reads as cleanly as the normal one. `name_width` and `state_width` keep working
+wherever their part ends up, `auto` included — the measurement does not care about the
+position.
 
 ### Collecting entities
 

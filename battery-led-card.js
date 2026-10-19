@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "5.3.0";
+export const VERSION = "5.4.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -256,6 +256,25 @@ export const stepToward = (cur, ziel) => {
   if (cur.side !== ziel.side) return { side: cur.side, on: cur.on - 1 };
   if (cur.on === ziel.on) return cur;
   return { side: cur.side, on: cur.on + (ziel.on > cur.on ? 1 : -1) };
+};
+
+export const LAYOUT_PARTS = ["icon", "name", "time", "bar", "flow", "state"];
+
+/**
+ * Reihenfolge der Teile einer Zeile. Ohne Angabe ergibt sie sich wie bisher aus den
+ * show_*-Schaltern; ist `layout` gesetzt, bestimmt die Liste allein, was erscheint und in
+ * welcher Reihenfolge — unbekannte Namen und Doppelte fallen weg.
+ */
+export const parseLayout = (layout, standard) => {
+  const roh = Array.isArray(layout)
+    ? layout
+    : typeof layout === "string" && layout.trim()
+      ? layout.split(/[,\s]+/)
+      : null;
+  if (!roh) return standard;
+  const teile = [...new Set(roh.map((x) => String(x).trim().toLowerCase()))]
+    .filter((x) => LAYOUT_PARTS.includes(x));
+  return teile.length ? teile : standard;
 };
 
 /** Erkennt eine Jinja-Vorlage — alles andere wird unverändert als Symbolname benutzt. */
@@ -556,6 +575,7 @@ export const DEFAULTS = {
   columns: 1,
   bar_height: 22,
   row_gap: 8,
+  layout: "",
   name_width: DEFAULT_NAME_WIDTH,
   state_width: DEFAULT_STATE_WIDTH,
   show_icon: true,
@@ -834,26 +854,44 @@ export class BatteryLedCard extends Base {
     this._rows = items.map((item) => {
       const row = document.createElement("div");
       row.className = "row";
-      row.innerHTML = this._split
-        ? `${c.show_icon ? '<ha-state-icon class="icon"></ha-state-icon>' : ""}
-          ${c.show_name ? '<div class="name"></div>' : ""}
-          <div class="batt">
-            <div class="half left"></div><div class="mid"></div><div class="half right"></div>
-          </div>
-          ${c.show_state ? '<div class="pct"></div>' : ""}`
-        : `${c.show_icon ? '<ha-state-icon class="icon"></ha-state-icon>' : ""}
-        ${c.show_name ? '<div class="name"></div>' : ""}
-        ${c.show_last_changed ? '<div class="time"></div>' : ""}
-        <div class="batt"><div class="body"></div>${c.cap ? '<div class="cap"></div>' : ""}</div>
-        ${c.show_flow && c.flow_style === "arrow"
-          ? '<div class="chev"><ha-icon></ha-icon></div>' : ""}
-        ${c.show_state ? '<div class="pct"></div>' : ""}`;
+      // Teile der Zeile in der gewünschten Reihenfolge. Der Balken ist der Anker: was links
+      // von ihm steht, richtet sich linksbündig aus, was rechts steht, rechtsbündig.
+      const standard = [
+        ...(c.show_icon ? ["icon"] : []),
+        ...(c.show_name ? ["name"] : []),
+        ...(!this._split && c.show_last_changed ? ["time"] : []),
+        "bar",
+        ...(!this._split && c.show_flow && c.flow_style === "arrow" ? ["flow"] : []),
+        ...(c.show_state ? ["state"] : []),
+      ];
+      const teile = parseLayout(c.layout, standard);
+      const balken = this._split
+        ? `<div class="batt">
+             <div class="half left"></div><div class="mid"></div><div class="half right"></div>
+           </div>`
+        : `<div class="batt"><div class="body"></div>${c.cap ? '<div class="cap"></div>' : ""}</div>`;
+      const stueck = {
+        icon: '<ha-state-icon class="icon"></ha-state-icon>',
+        name: '<div class="name"></div>',
+        time: '<div class="time"></div>',
+        bar: balken,
+        flow: '<div class="chev"><ha-icon></ha-icon></div>',
+        state: '<div class="pct"></div>',
+      };
+      row.innerHTML = teile.map((t) => stueck[t]).join("");
+      const vorBalken = teile.indexOf("bar");
+      for (const [k, t] of teile.entries()) {
+        if (t !== "name" && t !== "state" && t !== "time") continue;
+        const el = row.querySelector(t === "state" ? ".pct" : `.${t}`);
+        if (el) el.style.textAlign = vorBalken >= 0 && k < vorBalken ? "left" : "right";
+      }
       row.style.gap = `${c.row_gap}px`;
       // Gehäuse: ein Balken, bei der Flow-Karte zwei Hälften mit Mittelstrich
       const koerper = this._split
         ? [row.querySelector(".half.left"), row.querySelector(".half.right")]
         : [row.querySelector(".body")];
       for (const body of koerper) {
+        if (!body) continue;
         body.style.height = `${c.bar_height}px`;
         body.style.background = toCss(c.colors.body ?? BODY);
         body.style.borderColor = toCss(c.colors.frame ?? FRAME);
@@ -879,8 +917,8 @@ export class BatteryLedCard extends Base {
         body.appendChild(s);
         return s;
       });
-      const segs = bauSegmente(koerper[this._split ? 1 : 0]);
-      const segsLeft = this._split ? bauSegmente(koerper[0]) : null;
+      const segs = koerper[0] ? bauSegmente(koerper[this._split ? 1 : 0]) : [];
+      const segsLeft = this._split && koerper[0] ? bauSegmente(koerper[0]) : null;
       row.addEventListener("click", () => {
         const ev = new Event("hass-more-info", { bubbles: true, composed: true });
         ev.detail = { entityId: item.entity };
@@ -1364,6 +1402,7 @@ const LABELS = {
     columns: "Spalten",
     bar_height: "Höhe der Balken (px)",
     row_gap: "Abstand zwischen den Spalten (px)",
+    layout: "Reihenfolge der Zeile (icon, name, time, bar, flow, state)",
     name_width: "Breite der Beschriftung (auto, 30%, 120px …)",
     state_width: "Breite des Werts (auto, 3.2em, 60px …)",
     precision: "Nachkommastellen (leer = wie die Entität)",
@@ -1682,6 +1721,7 @@ const tailSchema = (generic, lang = "en", config = {}, split = false) => {
       { name: "columns", selector: num(1, 6) },
       { name: "bar_height", selector: num(8, 80) },
       { name: "row_gap", selector: num(0, 40) },
+      { name: "layout", selector: { text: {} } },
       { name: "sort", selector: { boolean: {} } },
       { name: "cap", selector: { boolean: {} } },
       { name: "cap_size", selector: num(1, 20) },
