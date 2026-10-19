@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "5.2.0";
+export const VERSION = "5.3.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -243,6 +243,19 @@ export const batteryLevel = (st) => {
   if (st.state === "on") return 0;   // binary_sensor battery: on == leer
   if (st.state === "off") return 100;
   return null;
+};
+
+/**
+ * Ein Schritt des Übergangs auf der Flow-Karte. Gezeigt wird immer {Seite, leuchtende LEDs};
+ * je Takt ändert sich das um genau eine LED. Wechselt der Wert die Seite, läuft erst die alte
+ * Seite leer und danach die neue voll — die Mitte wird nie übersprungen.
+ */
+export const stepToward = (cur, ziel) => {
+  if (!cur) return ziel;
+  if (cur.on === 0 && cur.side !== ziel.side) return { side: ziel.side, on: ziel.on > 0 ? 1 : 0 };
+  if (cur.side !== ziel.side) return { side: cur.side, on: cur.on - 1 };
+  if (cur.on === ziel.on) return cur;
+  return { side: cur.side, on: cur.on + (ziel.on > cur.on ? 1 : -1) };
 };
 
 /** Erkennt eine Jinja-Vorlage — alles andere wird unverändert als Symbolname benutzt. */
@@ -587,6 +600,8 @@ export const DEFAULTS = {
   trend_history: true,
   trend_full_scale: 5,
   invert_levels: false,
+  transition: true,
+  transition_step: 45,
   rise_is_bad: false,
 };
 
@@ -625,6 +640,7 @@ export class BatteryLedCard extends Base {
     this._rows = null;
     this._trend = new Map();
     this._tpl = this._tpl ?? new Map();
+    this._disp = new Map();
     this._peak = new Map();
     this.innerHTML = "";
   }
@@ -751,6 +767,8 @@ export class BatteryLedCard extends Base {
 
   disconnectedCallback() {
     this._dropTemplates();
+    clearInterval(this._anim);
+    this._anim = null;
     clearTimeout(this._timer);
     clearInterval(this._alt);
     this._timer = null;
@@ -885,6 +903,13 @@ export class BatteryLedCard extends Base {
     const c = this._config;
     const off = toCss(c.colors.off ?? OFF);
     const locale = this._hass.locale?.language ?? "de";
+    // Die Flow-Karte arbeitet auf den echten Zeilenobjekten: an ihnen hängen Ziel und
+    // Zeichenfunktion des Übergangs, auf einer Kopie wären sie nach jedem Update weg.
+    if (this._split) {
+      for (const r of this._rows) this._splitRow(r, c, off, locale);
+      this._fitAuto();
+      return;
+    }
     const data = this._rows.map((r) => {
       const st = this._hass.states[r.item.entity];
       return {
@@ -898,7 +923,6 @@ export class BatteryLedCard extends Base {
       data.forEach((d) => d.row.parentNode.appendChild(d.row));
     }
     for (const r of data) {
-      if (this._split) { this._splitRow(r, c, off, locale); continue; }
       const { item, row, segs, icon, name, pct, time, chev, st, lvl } = r;
       // Richtung wird immer berechnet — sie steuert auch das Pulsieren, das unabhängig
       // davon ist, ob ein Pfeil angezeigt wird.
@@ -1040,7 +1064,8 @@ export class BatteryLedCard extends Base {
    * Eine Zeile der Flow-Karte: zwei Entitäten, zwei Hälften, aus der Mitte nach außen.
    * Die linke Hälfte ist per CSS gespiegelt (row-reverse), gerechnet wird sie wie die rechte.
    */
-  _splitRow({ item, row, segs, segsLeft, icon, name, pct }, c, off, locale) {
+  _splitRow(r, c, off, locale) {
+    const { item, row, segs, segsLeft, icon, name, pct } = r;
     const states = this._hass.states;
     const seite = (id, max) => {
       const st = states[id];
@@ -1059,26 +1084,60 @@ export class BatteryLedCard extends Base {
         ?? rechts.st?.attributes?.friendly_name ?? item.entity ?? item.entity_left ?? "";
     }
     row.classList.toggle("dead", rechts.lvl === null && links.lvl === null);
-
-    const malen = (liste, { lvl }) => {
-      const on = lvl === null ? 0 : filledSegments(lvl, c.segments);
-      const farbe = lvl === null
-        ? "var(--disabled-text-color, #555)"
-        : levelColor(invertLevel(lvl, c.invert_levels), c.colors, c.thresholds);
-      liste.forEach((seg, i) => {
-        const col = this._segColors
-          ? this._segColors[c.invert_levels ? c.segments - 1 - i : i]
-          : farbe;
-        const lit = i < on;
-        seg.style.background = lit ? col : off;
-        seg.style.boxShadow = lit ? `0 0 5px ${col}` : "none";
-      });
-    };
-    malen(segs, rechts);
-    if (segsLeft) malen(segsLeft, links);
-
-    // Eine Zahl für beide Seiten: das Vorzeichen sagt, wohin der Balken zeigt.
     if (pct) pct.textContent = this._sideText(rechts, links, item, c, locale);
+
+    // Ziel: die Seite mit dem größeren Ausschlag, dort so viele LEDs wie der Wert hergibt
+    const an = (x) => (x.lvl === null ? 0 : filledSegments(x.lvl, c.segments));
+    const anRechts = an(rechts), anLinks = an(links);
+    const ziel = anLinks > anRechts
+      ? { side: "left", on: anLinks }
+      : { side: "right", on: anRechts };
+
+    const farbe = (x) => (x.lvl === null
+      ? "var(--disabled-text-color, #555)"
+      : levelColor(invertLevel(x.lvl, c.invert_levels), c.colors, c.thresholds));
+    const farbRechts = farbe(rechts), farbLinks = farbe(links);
+
+    // Gezeichnet wird aus dem angezeigten Zustand, nicht aus dem Zielwert — der Übergang
+    // läuft dazwischen ab.
+    r.zeichne = (disp) => {
+      const male = (liste, aktiv, grundfarbe) => {
+        if (!liste) return;
+        const on = aktiv ? disp.on : 0;
+        liste.forEach((seg, k) => {
+          const col = this._segColors
+            ? this._segColors[c.invert_levels ? c.segments - 1 - k : k]
+            : grundfarbe;
+          const lit = k < on;
+          seg.style.background = lit ? col : off;
+          seg.style.boxShadow = lit ? `0 0 5px ${col}` : "none";
+        });
+      };
+      male(segs, disp.side === "right", farbRechts);
+      male(segsLeft, disp.side === "left", farbLinks);
+    };
+
+    r.ziel = ziel;
+    const jetzt = c.transition ? (this._disp.get(r) ?? ziel) : ziel;
+    this._disp.set(r, jetzt);
+    r.zeichne(jetzt);
+    if (jetzt.side !== ziel.side || jetzt.on !== ziel.on) this._animate();
+  }
+
+  /** Taktgeber des Übergangs: je Takt eine LED, und er hält an, sobald alles steht. */
+  _animate() {
+    if (this._anim) return;
+    this._anim = setInterval(() => {
+      let offen = false;
+      for (const r of this._rows ?? []) {
+        if (!r.ziel || !r.zeichne) continue;
+        const next = stepToward(this._disp.get(r) ?? r.ziel, r.ziel);
+        this._disp.set(r, next);
+        r.zeichne(next);
+        if (next.side !== r.ziel.side || next.on !== r.ziel.on) offen = true;
+      }
+      if (!offen) { clearInterval(this._anim); this._anim = null; }
+    }, Math.max(10, this._config.transition_step));
   }
 
   /**
@@ -1253,6 +1312,8 @@ const LABELS = {
     rise_is_bad: "A rise is bad (swap the direction colours)",
     entity_left: "Entity on the left (empty = remove)",
     max_left: "Maximum on the left (empty = same as on the right)",
+    transition: "Run the bar up and down LED by LED",
+    transition_step: "Milliseconds per LED",
     cap: "Show positive terminal",
     cap_size: "Terminal size (px)",
     frame_width: "Frame width (px, 0 = no frame)",
@@ -1340,6 +1401,8 @@ const LABELS = {
     rise_is_bad: "Anstieg ist schlecht (Richtungsfarben tauschen)",
     entity_left: "Entität links (leeren = entfernen)",
     max_left: "Maximum links (leer = wie rechts)",
+    transition: "Balken LED für LED auf- und abbauen",
+    transition_step: "Millisekunden je LED",
     cap: "Pluspol anzeigen",
     cap_size: "Pluspol-Größe (px)",
     frame_width: "Rahmenstärke (px, 0 = kein Rahmen)",
@@ -1557,6 +1620,8 @@ export const fieldVisible = (name, c = {}, generic = false, split = false) => {
     case "flow_full_scale": return c.show_flow !== false;
     case "cap":                      // zwei Hälften mit Mittelstrich haben keinen Pluspol
     case "cap_size": return !split && c.cap !== false;
+    case "transition": return split;
+    case "transition_step": return split && c.transition !== false;
     case "peak_hold": return !!c.peak;
     case "pulse_travel":
     case "pulse_period":
@@ -1621,6 +1686,8 @@ const tailSchema = (generic, lang = "en", config = {}, split = false) => {
       { name: "cap", selector: { boolean: {} } },
       { name: "cap_size", selector: num(1, 20) },
       { name: "frame_width", selector: num(0, 6) },
+      { name: "transition", selector: { boolean: {} } },
+      { name: "transition_step", selector: num(10, 500, 5) },
     ]),
     ...group(O.group_colors, [
       select("preset", [
