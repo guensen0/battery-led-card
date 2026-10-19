@@ -145,19 +145,6 @@ flapping would postpone the rebuild forever. `0` = immediately.
 
 ### Per-entity entry
 
-The bar does not jump to a new value, it travels there: one LED per step, up or down. A value
-crossing the middle does it in two phases — the old side runs empty first, then the new one
-fills up, so the middle is never skipped. Two options steer it:
-
-| Option | | |
-|---|---|---|
-| `transition` | bool | `true` | on by default, `false` snaps to the value |
-| `transition_step` | 10–500 ms | `45` | time per LED; a bar of 12 takes about half a second |
-
-The first draw after loading snaps, so the card is not busy animating from zero every time a
-dashboard opens. When both sides carry a value the larger one is shown — a flow has one
-direction at a time.
-
 | Key | Meaning |
 |---|---|
 | `entity` | required |

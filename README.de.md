@@ -147,19 +147,6 @@ würde Dauerflattern den Umbau endlos verschieben. `0` = sofort.
 
 ### Eintrag je Entität
 
-Der Balken springt nicht auf einen neuen Wert, er wandert dorthin: eine LED je Schritt, hoch
-wie runter. Ein Wert, der die Mitte kreuzt, tut das in zwei Phasen — erst läuft die alte Seite
-leer, dann füllt sich die neue, die Mitte wird also nie übersprungen. Zwei Optionen steuern das:
-
-| Option | | |
-|---|---|---|
-| `transition` | bool | `true` | standardmäßig an, `false` springt wie bisher |
-| `transition_step` | 10–500 ms | `45` | Zeit je LED; ein Balken mit 12 braucht gut eine halbe Sekunde |
-
-Der erste Aufbau nach dem Laden springt, damit die Karte nicht bei jedem Öffnen eines
-Dashboards von null hochläuft. Tragen beide Seiten einen Wert, wird der größere gezeigt — ein
-Fluss hat zu einem Zeitpunkt eine Richtung.
-
 | Schlüssel | Bedeutung |
 |---|---|
 | `entity` | Pflicht |
