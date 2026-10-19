@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v5.5.0** — zwei Auswahllisten bestimmen, was links und rechts vom Balken steht
+**v5.5.1** — die Auswahl nimmt wieder mehr als einen Teil je Seite
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -140,8 +140,10 @@ sich im YAML auch direkt setzen lässt. Ist eine Reihenfolge gesetzt, verschwind
 
 Der Balken ist der Anker: Teile links von ihm richten sich linksbündig aus, Teile rechts davon
 rechtsbündig — eine gespiegelte Zeile liest sich dadurch genauso sauber wie die normale.
-`name_width` und `state_width` wirken weiter, egal wo ihr Teil landet, `auto` eingeschlossen —
-die Ausmessung kümmert sich nicht um die Position.
+`name_width` und `state_width` gehören zu ihrem Teil, nicht zu einer Seite: die Beschriftung
+behält ihre Breite, wohin du sie auch stellst, und der Wert ebenso. `auto` misst beide und
+richtet sie über alle Zeilen bündig aus wie bisher — die Position spielt dabei keine Rolle.
+Eine Breite, deren Teil nicht in der Reihenfolge steht, verschwindet aus dem Editor.
 
 ### Entitäten einsammeln
 

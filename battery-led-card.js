@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "5.5.0";
+export const VERSION = "5.5.1";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -288,7 +288,9 @@ export const splitLayout = (layout, standard) => {
 
 /** Setzt die beiden Seiten wieder zu einer Reihenfolge zusammen, Balken in der Mitte. */
 export const joinLayout = (left = [], right = []) => {
-  const sortiert = (xs) => LAYOUT_PARTS.filter((t) => t !== "bar" && xs.includes(t));
+  const liste = (xs) => (Array.isArray(xs) ? xs : String(xs ?? "").split(/[,\s]+/))
+    .map((x) => String(x).trim().toLowerCase());
+  const sortiert = (xs) => LAYOUT_PARTS.filter((t) => t !== "bar" && liste(xs).includes(t));
   return [...sortiert(left), "bar", ...sortiert(right)];
 };
 
@@ -1534,7 +1536,7 @@ export const labelFor = (schema, generic, labels = LABELS.en, generic_labels = G
 const OPTION_LABELS = {
   en: {
     part_icon: "Symbol",
-    part_name: "Name",
+    part_name: "Label",
     part_time: "Last changed",
     part_flow: "Flow arrow",
     part_state: "Value",
@@ -1570,7 +1572,7 @@ const OPTION_LABELS = {
   },
   de: {
     part_icon: "Symbol",
-    part_name: "Name",
+    part_name: "Beschriftung",
     part_time: "Letzte Änderung",
     part_flow: "Ladefluss-Pfeil",
     part_state: "Wert",
@@ -1682,10 +1684,16 @@ export const fieldVisible = (name, c = {}, generic = false, split = false) => {
     case "show_last_changed":
       // Steht die Reihenfolge fest, bestimmt sie auch, was erscheint
       return !String(c.layout ?? "").length;
-    case "name_width": return c.show_name !== false;
+    case "name_width":
+      return String(c.layout ?? "").length
+        ? parseLayout(c.layout, []).includes("name")
+        : c.show_name !== false;
     case "state_width":
     case "precision":
-    case "unit": return c.show_state !== false;
+    case "unit":
+      return String(c.layout ?? "").length
+        ? parseLayout(c.layout, []).includes("state")
+        : c.show_state !== false;
     case "flow_style":
     case "animate_flow":
     case "flow_full_scale": return c.show_flow !== false;
@@ -1758,7 +1766,6 @@ const tailSchema = (generic, lang = "en", config = {}, split = false) => {
         selector: {
           select: {
             multiple: true,
-            mode: "dropdown",
             options: LAYOUT_PARTS.filter((t) => t !== "bar")
               .map((value) => ({ value, label: O["part_" + value] })),
           },

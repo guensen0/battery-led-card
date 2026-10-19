@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v5.5.0** — two dropdowns pick what goes left and right of the bar
+**v5.5.1** — the layout pickers take more than one part per side again
 
 Two Lovelace cards, one file, one resource:
 
@@ -138,9 +138,10 @@ Once a layout is set the `show_*` switches disappear from the editor — the lis
 what appears.
 
 The bar is the anchor: parts left of it align to the left, parts right of it to the right, so
-a mirrored row reads as cleanly as the normal one. `name_width` and `state_width` keep working
-wherever their part ends up, `auto` included — the measurement does not care about the
-position.
+a mirrored row reads as cleanly as the normal one. `name_width` and `state_width` belong to their part, not to a side: the label keeps its width
+wherever you put it, and so does the value. `auto` measures both and lines them up across all
+rows exactly as before — the measurement does not care about the position. A width whose part
+is not in the layout disappears from the editor.
 
 ### Collecting entities
 
