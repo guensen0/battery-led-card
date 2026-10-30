@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v5.6.0** — on the flow card a part can sit on both sides, each tied to its own entity
+**v5.7.0** — the flow card's left side can run its thresholds the other way round
 
 Two Lovelace cards, one file, one resource:
 
@@ -158,6 +158,19 @@ The left icon then shows the left entity and the right one the right entity, and
 cell carries its own side — without a sign, because the side already says the direction. With
 only one value cell you get the signed figure described above. On the other two cards a part
 still appears once per row; there is only one entity to show.
+
+The two sides can judge their values differently. Charging is good when there is a lot of it,
+discharging is not — `invert_levels_left` turns the left ramp around so that little shows green
+near the middle and a lot shows red towards the outside, while the right side keeps running the
+normal way:
+
+```yaml
+invert_levels_left: true
+color_mode: segment
+```
+
+Without it the left side follows `invert_levels`, so both sides read alike. Both are settable
+per row as well.
 
 ### Collecting entities
 
@@ -462,6 +475,7 @@ direction at a time.
 | `entity` | the value growing to the **right** |
 | `entity_left` | the value growing to the **left** |
 | `icon` / `icon_left` | icon per side; `icon_left` falls back to `icon` |
+| `invert_levels` / `invert_levels_left` | threshold direction per side; left falls back to the right |
 | `max` / `max_left` | full deflection per side; `min` sets the inner end, default `0` |
 | `name`, `icon`, `precision`, `unit` | as on the other cards |
 

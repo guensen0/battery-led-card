@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "5.6.0";
+export const VERSION = "5.7.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -645,6 +645,7 @@ export const DEFAULTS = {
   trend_history: true,
   trend_full_scale: 5,
   invert_levels: false,
+  invert_levels_left: null,
   transition: true,
   transition_step: 45,
   rise_is_bad: false,
@@ -1173,28 +1174,32 @@ export class BatteryLedCard extends Base {
       ? { side: "left", on: anLinks }
       : { side: "right", on: anRechts };
 
-    const farbe = (x) => (x.lvl === null
+    // Schwellenrichtung je Seite: beim Entladen ist viel schlecht, beim Laden viel gut.
+    // Ohne eigene Angabe folgt links der rechten Seite.
+    const drehRechts = item.invert_levels ?? c.invert_levels;
+    const drehLinks = item.invert_levels_left ?? c.invert_levels_left ?? drehRechts;
+    const farbe = (x, dreh) => (x.lvl === null
       ? "var(--disabled-text-color, #555)"
-      : levelColor(invertLevel(x.lvl, c.invert_levels), c.colors, c.thresholds));
-    const farbRechts = farbe(rechts), farbLinks = farbe(links);
+      : levelColor(invertLevel(x.lvl, dreh), c.colors, c.thresholds));
+    const farbRechts = farbe(rechts, drehRechts), farbLinks = farbe(links, drehLinks);
 
     // Gezeichnet wird aus dem angezeigten Zustand, nicht aus dem Zielwert — der Übergang
     // läuft dazwischen ab.
     r.zeichne = (disp) => {
-      const male = (liste, aktiv, grundfarbe) => {
+      const male = (liste, aktiv, grundfarbe, dreh) => {
         if (!liste) return;
         const on = aktiv ? disp.on : 0;
         liste.forEach((seg, k) => {
           const col = this._segColors
-            ? this._segColors[c.invert_levels ? c.segments - 1 - k : k]
+            ? this._segColors[dreh ? c.segments - 1 - k : k]
             : grundfarbe;
           const lit = k < on;
           seg.style.background = lit ? col : off;
           seg.style.boxShadow = lit ? `0 0 5px ${col}` : "none";
         });
       };
-      male(segs, disp.side === "right", farbRechts);
-      male(segsLeft, disp.side === "left", farbLinks);
+      male(segs, disp.side === "right", farbRechts, drehRechts);
+      male(segsLeft, disp.side === "left", farbLinks, drehLinks);
     };
 
     r.ziel = ziel;
@@ -1391,6 +1396,7 @@ const LABELS = {
     trend_history: "Query history on load",
     trend_full_scale: "Full speed at … %/min",
     invert_levels: "High values are bad (mirror the colours)",
+    invert_levels_left: "… on the left side (empty = same as on the right)",
     rise_is_bad: "A rise is bad (swap the direction colours)",
     entity_left: "Entity on the left (empty = remove)",
     max_left: "Maximum on the left (empty = same as on the right)",
@@ -1483,6 +1489,7 @@ const LABELS = {
     trend_history: "Verlauf beim Laden abfragen",
     trend_full_scale: "Volles Tempo bei … %/min",
     invert_levels: "Hohe Werte sind schlecht (Farben spiegeln)",
+    invert_levels_left: "… auf der linken Seite (leer = wie rechts)",
     rise_is_bad: "Anstieg ist schlecht (Richtungsfarben tauschen)",
     entity_left: "Entität links (leeren = entfernen)",
     max_left: "Maximum links (leer = wie rechts)",
@@ -1658,6 +1665,10 @@ const itemFields = (generic, split = false) =>
         { name: "icon", selector: { icon: {} } },
         { name: "icon_left", selector: { icon: {} } },
         { type: "grid", schema: [
+          { name: "invert_levels", selector: { boolean: {} } },
+          { name: "invert_levels_left", selector: { boolean: {} } },
+        ] },
+        { type: "grid", schema: [
           { name: "max", selector: num(-1000000, 1000000, 0.01) },
           { name: "max_left", selector: num(-1000000, 1000000, 0.01) },
           { name: "precision", selector: num(0, 5) },
@@ -1729,6 +1740,7 @@ export const fieldVisible = (name, c = {}, generic = false, split = false) => {
     case "flow_full_scale": return c.show_flow !== false;
     case "cap":                      // zwei Hälften mit Mittelstrich haben keinen Pluspol
     case "cap_size": return !split && c.cap !== false;
+    case "invert_levels_left": return split;
     case "transition": return split;
     case "transition_step": return split && c.transition !== false;
     case "peak_hold": return !!c.peak;
@@ -1888,6 +1900,7 @@ const tailSchema = (generic, lang = "en", config = {}, split = false) => {
           { name: "min", selector: num(-1000000, 1000000, 0.01) },
           { name: "max", selector: num(-1000000, 1000000, 0.01) },
           { name: "invert_levels", selector: { boolean: {} } },
+          { name: "invert_levels_left", selector: { boolean: {} } },
           { name: "trend_flow", selector: { boolean: {} } },
           { name: "trend_hold", selector: num(10, 86400, 10) },
           { name: "trend_deadband", selector: num(0, 100, 0.1) },

@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v5.6.0** — auf der Flow-Karte darf ein Teil auf beiden Seiten stehen, je an seiner Entität
+**v5.7.0** — die linke Seite der Flow-Karte kann ihre Schwellen andersherum laufen lassen
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -161,6 +161,18 @@ Das linke Symbol zeigt dann die linke Entität und das rechte die rechte, und je
 trägt ihre eigene Seite — ohne Vorzeichen, denn die Seite sagt die Richtung ja schon. Mit nur
 einer Wertespalte bekommst du die Zahl mit Vorzeichen von oben. Auf den anderen beiden Karten
 kommt ein Teil weiterhin einmal je Zeile vor, dort gibt es nur eine Entität.
+
+Die beiden Seiten dürfen ihre Werte verschieden bewerten. Viel Ladung ist gut, viel Entladung
+nicht — `invert_levels_left` dreht die linke Rampe um, sodass dort wenig an der Mitte grün ist
+und viel nach außen hin rot, während die rechte Seite normal weiterläuft:
+
+```yaml
+invert_levels_left: true
+color_mode: segment
+```
+
+Ohne die Angabe folgt links der rechten Seite, beide lesen sich dann gleich. Beides lässt sich
+auch je Zeile setzen.
 
 ### Entitäten einsammeln
 
@@ -466,6 +478,7 @@ Fluss hat zu einem Zeitpunkt eine Richtung.
 | `entity` | der Wert, der nach **rechts** wächst |
 | `entity_left` | der Wert, der nach **links** wächst |
 | `icon` / `icon_left` | Symbol je Seite; ohne `icon_left` gilt `icon` |
+| `invert_levels` / `invert_levels_left` | Schwellenrichtung je Seite; links folgt ohne Angabe rechts |
 | `max` / `max_left` | Vollausschlag je Seite; `min` setzt das innere Ende, Default `0` |
 | `name`, `icon`, `precision`, `unit` | wie auf den anderen Karten |
 
