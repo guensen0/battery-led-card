@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v5.7.0** — the flow card's left side can run its thresholds the other way round
+**v5.8.0** — the flow card's left side gets its own threshold direction and its own breakpoints
 
 Two Lovelace cards, one file, one resource:
 
@@ -171,6 +171,28 @@ color_mode: segment
 
 Without it the left side follows `invert_levels`, so both sides read alike. Both are settable
 per row as well.
+
+The two steer different things and work together:
+
+| | what it does |
+|---|---|
+| `invert_levels_left` | the **direction** — much becomes red instead of green |
+| `thresholds_left` | **where** the colours change, as percentages of that side |
+
+The ramp always runs red to green, so a direction cannot be expressed through numbers alone —
+that is what the first one is for. The second moves the breakpoints, and values left out fall
+back to `thresholds`.
+
+Mind the counting once the side is mirrored: a threshold is then measured from the **full**
+end, so the red zone starts at `100 − critical` percent. With `max_left: 2500` and the standard
+`critical: 10`, red begins at 2250 W; to have it begin at 1000 W — 40 % of the side — set
+`critical: 60`:
+
+```yaml
+invert_levels_left: true
+thresholds_left:
+  critical: 60
+```
 
 ### Collecting entities
 
@@ -476,6 +498,7 @@ direction at a time.
 | `entity_left` | the value growing to the **left** |
 | `icon` / `icon_left` | icon per side; `icon_left` falls back to `icon` |
 | `invert_levels` / `invert_levels_left` | threshold direction per side; left falls back to the right |
+| `thresholds_left` | breakpoints for the left side; keys left out fall back to `thresholds` (card level) |
 | `max` / `max_left` | full deflection per side; `min` sets the inner end, default `0` |
 | `name`, `icon`, `precision`, `unit` | as on the other cards |
 

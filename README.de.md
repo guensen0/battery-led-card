@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v5.7.0** — die linke Seite der Flow-Karte kann ihre Schwellen andersherum laufen lassen
+**v5.8.0** — die linke Seite der Flow-Karte bekommt eigene Schwellenrichtung und eigene Grenzen
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -173,6 +173,28 @@ color_mode: segment
 
 Ohne die Angabe folgt links der rechten Seite, beide lesen sich dann gleich. Beides lässt sich
 auch je Zeile setzen.
+
+Die beiden steuern verschiedene Dinge und ergänzen sich:
+
+| | was es tut |
+|---|---|
+| `invert_levels_left` | die **Richtung** — viel wird rot statt grün |
+| `thresholds_left` | **wo** die Farben kippen, in Prozent dieser Seite |
+
+Die Rampe läuft immer von Rot nach Grün, eine Richtung lässt sich über Zahlen also nicht
+ausdrücken — dafür ist der erste Schalter da. Der zweite verschiebt die Grenzen; was du
+weglässt, gilt weiter aus `thresholds`.
+
+Auf die Zählrichtung achten, sobald die Seite gespiegelt ist: eine Schwelle misst dann vom
+**vollen** Ende her, der rote Bereich beginnt also bei `100 − critical` Prozent. Mit
+`max_left: 2500` und dem üblichen `critical: 10` wird es erst ab 2250 W rot; soll es schon ab
+1000 W rot sein — 40 % der Seite — setzt du `critical: 60`:
+
+```yaml
+invert_levels_left: true
+thresholds_left:
+  critical: 60
+```
 
 ### Entitäten einsammeln
 
@@ -479,6 +501,7 @@ Fluss hat zu einem Zeitpunkt eine Richtung.
 | `entity_left` | der Wert, der nach **links** wächst |
 | `icon` / `icon_left` | Symbol je Seite; ohne `icon_left` gilt `icon` |
 | `invert_levels` / `invert_levels_left` | Schwellenrichtung je Seite; links folgt ohne Angabe rechts |
+| `thresholds_left` | Grenzen der linken Seite; weggelassene Schlüssel gelten aus `thresholds` (Kartenebene) |
 | `max` / `max_left` | Vollausschlag je Seite; `min` setzt das innere Ende, Default `0` |
 | `name`, `icon`, `precision`, `unit` | wie auf den anderen Karten |
 

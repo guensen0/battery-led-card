@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "5.7.0";
+export const VERSION = "5.8.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -633,6 +633,7 @@ export const DEFAULTS = {
   show_last_changed: false,
   colors: {},
   thresholds: {},
+  thresholds_left: {},
   auto: false,
   auto_area: [],
   auto_exclude: [],
@@ -871,6 +872,13 @@ export class BatteryLedCard extends Base {
     }
     this._segColors = c.color_mode === "segment"
       ? Array.from({ length: c.segments }, (_, i) => segmentColor(i, c.segments, c.colors, c.thresholds))
+      : null;
+    // eigene Rampe für links, sobald dort eigene Schwellen gesetzt sind
+    const schwellenLinks = { ...c.thresholds, ...(c.thresholds_left ?? {}) };
+    this._segColorsLeft = this._split && c.color_mode === "segment"
+      && Object.keys(c.thresholds_left ?? {}).length
+      ? Array.from({ length: c.segments },
+          (_, i) => segmentColor(i, c.segments, c.colors, schwellenLinks))
       : null;
     const grid = document.createElement("div");
     grid.className = "grid";
@@ -1178,28 +1186,29 @@ export class BatteryLedCard extends Base {
     // Ohne eigene Angabe folgt links der rechten Seite.
     const drehRechts = item.invert_levels ?? c.invert_levels;
     const drehLinks = item.invert_levels_left ?? c.invert_levels_left ?? drehRechts;
-    const farbe = (x, dreh) => (x.lvl === null
+    const schwellenLinks = { ...c.thresholds, ...(c.thresholds_left ?? {}) };
+    const farbe = (x, dreh, schwellen) => (x.lvl === null
       ? "var(--disabled-text-color, #555)"
-      : levelColor(invertLevel(x.lvl, dreh), c.colors, c.thresholds));
-    const farbRechts = farbe(rechts, drehRechts), farbLinks = farbe(links, drehLinks);
+      : levelColor(invertLevel(x.lvl, dreh), c.colors, schwellen));
+    const farbRechts = farbe(rechts, drehRechts, c.thresholds);
+    const farbLinks = farbe(links, drehLinks, schwellenLinks);
 
     // Gezeichnet wird aus dem angezeigten Zustand, nicht aus dem Zielwert — der Übergang
     // läuft dazwischen ab.
     r.zeichne = (disp) => {
-      const male = (liste, aktiv, grundfarbe, dreh) => {
+      const male = (liste, aktiv, grundfarbe, dreh, rampe) => {
         if (!liste) return;
         const on = aktiv ? disp.on : 0;
         liste.forEach((seg, k) => {
-          const col = this._segColors
-            ? this._segColors[dreh ? c.segments - 1 - k : k]
-            : grundfarbe;
+          const col = rampe ? rampe[dreh ? c.segments - 1 - k : k] : grundfarbe;
           const lit = k < on;
           seg.style.background = lit ? col : off;
           seg.style.boxShadow = lit ? `0 0 5px ${col}` : "none";
         });
       };
-      male(segs, disp.side === "right", farbRechts, drehRechts);
-      male(segsLeft, disp.side === "left", farbLinks, drehLinks);
+      male(segs, disp.side === "right", farbRechts, drehRechts, this._segColors);
+      male(segsLeft, disp.side === "left", farbLinks, drehLinks,
+        this._segColorsLeft ?? this._segColors);
     };
 
     r.ziel = ziel;
@@ -1419,6 +1428,7 @@ const LABELS = {
     entity: "Entity (clear to remove)",
     add: "＋ Add entity",
     thresholds: "Thresholds (%)",
+    thresholds_left: "Thresholds on the left (%)",
     colors: "Colors (theme)",
     colors_custom: "Colors — custom values (hex, rgb(), var(…))",
     critical: "Critical",
@@ -1512,6 +1522,7 @@ const LABELS = {
     entity: "Entität (leeren = entfernen)",
     add: "＋ Entität hinzufügen",
     thresholds: "Schwellen (%)",
+    thresholds_left: "Schwellen links (%)",
     colors: "Farben (Theme)",
     colors_custom: "Farben — eigene Werte (Hex, rgb(), var(…))",
     critical: "Kritisch",
@@ -1846,6 +1857,12 @@ const tailSchema = (generic, lang = "en", config = {}, split = false) => {
         title: L.thresholds,
         schema: ["critical", "low", "medium", "high"].map((n) => ({ name: n, selector: num(0, 100) })),
       },
+      ...(split ? [{
+        type: "expandable",
+        name: "thresholds_left",
+        title: L.thresholds_left,
+        schema: ["critical", "low", "medium", "high"].map((n) => ({ name: n, selector: num(0, 100) })),
+      }] : []),
       {
         type: "expandable",
         name: "colors",
