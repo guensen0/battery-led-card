@@ -2,7 +2,7 @@
 
 🇬🇧 English | 🇩🇪 [Deutsch](README.de.md)
 
-**v5.8.0** — the flow card's left side gets its own threshold direction and its own breakpoints
+**v5.9.0** — the flow card's left side gets its own colours too
 
 Two Lovelace cards, one file, one resource:
 
@@ -192,7 +192,14 @@ end, so the red zone starts at `100 − critical` percent. With `max_left: 2500`
 invert_levels_left: true
 thresholds_left:
   critical: 60
+colors_left:
+  critical: "#0000ff"
 ```
+
+`colors_left` sets the ramp colours for the left side — only the five level colours, since
+housing, frame and direction colours belong to the whole card. Keys left out fall back to
+`colors`, so one entry is enough to recolour a single step. The editor has both blocks twice,
+once as theme colours and once with the picker and free text.
 
 ### Collecting entities
 
@@ -499,6 +506,7 @@ direction at a time.
 | `icon` / `icon_left` | icon per side; `icon_left` falls back to `icon` |
 | `invert_levels` / `invert_levels_left` | threshold direction per side; left falls back to the right |
 | `thresholds_left` | breakpoints for the left side; keys left out fall back to `thresholds` (card level) |
+| `colors_left` | ramp colours for the left side; keys left out fall back to `colors` (card level) |
 | `max` / `max_left` | full deflection per side; `min` sets the inner end, default `0` |
 | `name`, `icon`, `precision`, `unit` | as on the other cards |
 

@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) | 🇩🇪 Deutsch
 
-**v5.8.0** — die linke Seite der Flow-Karte bekommt eigene Schwellenrichtung und eigene Grenzen
+**v5.9.0** — die linke Seite der Flow-Karte bekommt auch eigene Farben
 
 Zwei Lovelace-Karten, eine Datei, eine Ressource:
 
@@ -194,7 +194,14 @@ Auf die Zählrichtung achten, sobald die Seite gespiegelt ist: eine Schwelle mis
 invert_levels_left: true
 thresholds_left:
   critical: 60
+colors_left:
+  critical: "#0000ff"
 ```
+
+`colors_left` setzt die Rampenfarben der linken Seite — nur die fünf Stufenfarben, denn
+Gehäuse, Rahmen und Richtungsfarben gehören der ganzen Karte. Weggelassene Schlüssel gelten
+aus `colors`, ein Eintrag reicht also, um eine einzelne Stufe umzufärben. Im Editor gibt es
+beide Blöcke doppelt, einmal als Theme-Farben und einmal mit Wähler und Freitext.
 
 ### Entitäten einsammeln
 
@@ -502,6 +509,7 @@ Fluss hat zu einem Zeitpunkt eine Richtung.
 | `icon` / `icon_left` | Symbol je Seite; ohne `icon_left` gilt `icon` |
 | `invert_levels` / `invert_levels_left` | Schwellenrichtung je Seite; links folgt ohne Angabe rechts |
 | `thresholds_left` | Grenzen der linken Seite; weggelassene Schlüssel gelten aus `thresholds` (Kartenebene) |
+| `colors_left` | Stufenfarben der linken Seite; weggelassene Schlüssel gelten aus `colors` (Kartenebene) |
 | `max` / `max_left` | Vollausschlag je Seite; `min` setzt das innere Ende, Default `0` |
 | `name`, `icon`, `precision`, `unit` | wie auf den anderen Karten |
 

@@ -1,7 +1,7 @@
 // battery-led-card — horizontal segmented LED battery overview for Home Assistant
 // Resource type: module
 
-export const VERSION = "5.8.0";
+export const VERSION = "5.9.0";
 
 // Stufe, Default-Schwelle (Stand < Schwelle), Default-Farbe. Reihenfolge = Prüfreihenfolge.
 const LEVELS = [
@@ -634,6 +634,7 @@ export const DEFAULTS = {
   colors: {},
   thresholds: {},
   thresholds_left: {},
+  colors_left: {},
   auto: false,
   auto_area: [],
   auto_exclude: [],
@@ -873,12 +874,13 @@ export class BatteryLedCard extends Base {
     this._segColors = c.color_mode === "segment"
       ? Array.from({ length: c.segments }, (_, i) => segmentColor(i, c.segments, c.colors, c.thresholds))
       : null;
-    // eigene Rampe für links, sobald dort eigene Schwellen gesetzt sind
+    // eigene Rampe für links, sobald dort eigene Schwellen oder Farben gesetzt sind
     const schwellenLinks = { ...c.thresholds, ...(c.thresholds_left ?? {}) };
+    const farbenLinks = { ...c.colors, ...(c.colors_left ?? {}) };
     this._segColorsLeft = this._split && c.color_mode === "segment"
-      && Object.keys(c.thresholds_left ?? {}).length
+      && (Object.keys(c.thresholds_left ?? {}).length || Object.keys(c.colors_left ?? {}).length)
       ? Array.from({ length: c.segments },
-          (_, i) => segmentColor(i, c.segments, c.colors, schwellenLinks))
+          (_, i) => segmentColor(i, c.segments, farbenLinks, schwellenLinks))
       : null;
     const grid = document.createElement("div");
     grid.className = "grid";
@@ -1187,11 +1189,12 @@ export class BatteryLedCard extends Base {
     const drehRechts = item.invert_levels ?? c.invert_levels;
     const drehLinks = item.invert_levels_left ?? c.invert_levels_left ?? drehRechts;
     const schwellenLinks = { ...c.thresholds, ...(c.thresholds_left ?? {}) };
-    const farbe = (x, dreh, schwellen) => (x.lvl === null
+    const farbenLinks = { ...c.colors, ...(c.colors_left ?? {}) };
+    const farbe = (x, dreh, schwellen, farben) => (x.lvl === null
       ? "var(--disabled-text-color, #555)"
-      : levelColor(invertLevel(x.lvl, dreh), c.colors, schwellen));
-    const farbRechts = farbe(rechts, drehRechts, c.thresholds);
-    const farbLinks = farbe(links, drehLinks, schwellenLinks);
+      : levelColor(invertLevel(x.lvl, dreh), farben, schwellen));
+    const farbRechts = farbe(rechts, drehRechts, c.thresholds, c.colors);
+    const farbLinks = farbe(links, drehLinks, schwellenLinks, farbenLinks);
 
     // Gezeichnet wird aus dem angezeigten Zustand, nicht aus dem Zielwert — der Übergang
     // läuft dazwischen ab.
@@ -1429,6 +1432,8 @@ const LABELS = {
     add: "＋ Add entity",
     thresholds: "Thresholds (%)",
     thresholds_left: "Thresholds on the left (%)",
+    colors_left: "Colours on the left (theme)",
+    colors_left_custom: "Colours on the left — own values",
     colors: "Colors (theme)",
     colors_custom: "Colors — custom values (hex, rgb(), var(…))",
     critical: "Critical",
@@ -1523,6 +1528,8 @@ const LABELS = {
     add: "＋ Entität hinzufügen",
     thresholds: "Schwellen (%)",
     thresholds_left: "Schwellen links (%)",
+    colors_left: "Farben links (Theme)",
+    colors_left_custom: "Farben links — eigene Werte",
     colors: "Farben (Theme)",
     colors_custom: "Farben — eigene Werte (Hex, rgb(), var(…))",
     critical: "Kritisch",
@@ -1859,6 +1866,12 @@ const tailSchema = (generic, lang = "en", config = {}, split = false) => {
       },
       ...(split ? [{
         type: "expandable",
+        name: "colors_left",
+        title: L.colors_left,
+        schema: LEFT_COLOR_KEYS.map(([n]) => ({ name: n, selector: { ui_color: {} } })),
+      }] : []),
+      ...(split ? [{
+        type: "expandable",
         name: "thresholds_left",
         title: L.thresholds_left,
         schema: ["critical", "low", "medium", "high"].map((n) => ({ name: n, selector: num(0, 100) })),
@@ -1929,6 +1942,10 @@ const tailSchema = (generic, lang = "en", config = {}, split = false) => {
 };
 
 // Zusätzlich ein eigener Block für alles, was der Theme-Wähler nicht kann (Hex, Alpha, var()).
+// Je Seite einstellbar sind nur die Stufenfarben — Gehäuse, Rahmen und Richtungsfarben
+// gehören der ganzen Karte.
+const LEFT_COLOR_KEYS = LEVELS.map(([key, , def]) => [key, def]);
+
 const COLOR_KEYS = [
   ...LEVELS.map(([key, , def]) => [key, def]),
   ["off", OFF],
@@ -2012,8 +2029,14 @@ export class BatteryLedCardEditor extends Base {
       const ver = document.createElement("div");
       ver.className = "version";
       ver.textContent = `Battery LED Card v${VERSION}`;
+      this._colorRows = [];
       this.append(style, this._form, ...(this._generic ? [] : [this._buildTools()]),
-        this._buildColors(), ver);
+        this._buildColors(),
+        ...(this._split
+          ? [this._buildColors("colors_left", LABELS[this._lang].colors_left_custom,
+              LEFT_COLOR_KEYS)]
+          : []),
+        ver);
     }
     const items = (this._config.entities ?? []).map((e) => (typeof e === "string" ? { entity: e } : e));
     this._items = items;
@@ -2072,13 +2095,17 @@ export class BatteryLedCardEditor extends Base {
     this._emit({ ...this._config, entities: [...(this._config.entities ?? []), ...found] });
   }
 
-  /** Je Stufe: Farbwähler + Freitext (Hex mit/ohne Raute, CSS-Name, rgb(), var()). */
-  _buildColors() {
+  /**
+   * Je Stufe: Farbwähler + Freitext (Hex mit/ohne Raute, CSS-Name, rgb(), var()).
+   * `ziel` ist der Config-Schlüssel — "colors" für die Karte, "colors_left" für die
+   * linke Seite der Flow-Karte.
+   */
+  _buildColors(ziel = "colors", titel = null, schluessel = null) {
     const L = LABELS[this._lang];
     const box = document.createElement("details");
     box.className = "colorbox";
-    box.innerHTML = `<summary>${L.colors_custom}</summary>`;
-    this._colorRows = COLOR_KEYS
+    box.innerHTML = `<summary>${titel ?? L.colors_custom}</summary>`;
+    const reihen = (schluessel ?? COLOR_KEYS)
       .filter(([key]) => !(this._split && key === "reserve"))
       .map(([key, def]) => {
       const row = document.createElement("div");
@@ -2093,34 +2120,36 @@ export class BatteryLedCardEditor extends Base {
       if (def.startsWith("color-mix") || def.startsWith("var(")) tx.placeholder = this._lang === "de" ? "aus dem Theme" : "from theme";
       sw.addEventListener("input", () => {
         tx.value = sw.value;
-        this._colorChanged(key, sw.value);
+        this._colorChanged(key, sw.value, ziel);
       });
       tx.addEventListener("change", () => {
         sw.value = resolveHex(toCss(tx.value) || def, def);
-        this._colorChanged(key, tx.value);
+        this._colorChanged(key, tx.value, ziel);
       });
       box.appendChild(row);
-      return { key, def, sw, tx };
+      return { key, def, sw, tx, ziel };
     });
+    this._colorRows = [...(this._colorRows ?? []), ...reihen];
     return box;
   }
 
   _fillColors() {
     const preset = presetColors(this._config.preset, {}, this._config.surface ?? "classic");
-    for (const { key, def: fallback, sw, tx } of this._colorRows ?? []) {
-      const def = preset[key] ?? fallback;
+    for (const { key, def: fallback, sw, tx, ziel } of this._colorRows ?? []) {
+      const def = (ziel === "colors_left" ? this._config.colors?.[key] : null)
+        ?? preset[key] ?? fallback;
       tx.placeholder = def;
-      const v = this._config.colors?.[key];
+      const v = this._config[ziel]?.[key];
       tx.value = v == null ? "" : Array.isArray(v) ? toCss(v) : String(v);
       sw.value = resolveHex(toCss(v ?? def), def);
     }
   }
 
-  _colorChanged(key, value) {
-    const colors = { ...(this._config.colors ?? {}) };
-    if (String(value).trim()) colors[key] = String(value).trim();
-    else delete colors[key];                  // leer = Default
-    this._emit({ ...this._config, colors });
+  _colorChanged(key, value, ziel = "colors") {
+    const farben = { ...(this._config[ziel] ?? {}) };
+    if (String(value).trim()) farben[key] = String(value).trim();
+    else delete farben[key];                  // leer = Default
+    this._emit({ ...this._config, [ziel]: farben });
   }
 
   _valueChanged(ev) {
@@ -2140,6 +2169,7 @@ export class BatteryLedCardEditor extends Base {
   _emit(config) {
     if (!config.title) delete config.title;
     if (!Object.keys(config.colors ?? {}).length) delete config.colors;
+    if (!Object.keys(config.colors_left ?? {}).length) delete config.colors_left;
     const ordered = orderConfig(config);
     this._config = ordered;
     this.dispatchEvent(
